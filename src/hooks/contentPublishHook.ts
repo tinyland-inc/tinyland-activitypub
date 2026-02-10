@@ -1,0 +1,580 @@
+/**
+ * Content Publish Hook
+ * Automatically publishes, updates, and deletes content on the fediverse
+ */
+
+import crypto from 'crypto';
+import { queueForDelivery } from '../services/ActivityDeliveryService.js';
+import { getActorByHandle } from '../services/ActorService.js';
+import { createObject } from '../services/ContentObjectService.js';
+import { getFollowerUris } from '../services/FollowersService.js';
+import {
+  getFollowersUri,
+  getSiteBaseUrl
+} from '../config.js';
+import {
+  parseMentions,
+  extractActorUrisFromMentions,
+  type ParsedMention
+} from '../utils/mentions.js';
+import type { Activity, Tombstone } from '../types/activitystreams.js';
+import type {
+  BlogPost,
+  ContentNote,
+  Product,
+  ContentEvent,
+  ContentImage,
+  ContentVideo,
+  ContentDocument
+} from '../types/content.js';
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * Visibility levels for federated content
+ * - public: Visible to everyone, appears in public timelines
+ * - unlisted: Visible to everyone, but not in public timelines
+ * - followers: Only visible to followers
+ * - private: Only visible to author
+ * - direct: Only visible to mentioned actors
+ */
+export type FederatedVisibility = 'public' | 'unlisted' | 'followers' | 'private' | 'direct';
+
+/**
+ * Options for publishing content to the fediverse
+ */
+export interface PublishOptions {
+  /** Content visibility level */
+  visibility: FederatedVisibility;
+  /** Actor URIs that are explicitly mentioned */
+  mentionedActors?: string[];
+  /** URI of the post this is replying to */
+  inReplyTo?: string;
+  /** Whether content contains sensitive material */
+  sensitive?: boolean;
+  /** Content warning text (shown before content) */
+  contentWarning?: string;
+}
+
+/**
+ * Unified content item type (all publishable content types)
+ */
+export type PublishableContent =
+  | BlogPost
+  | ContentNote
+  | Product
+  | ContentEvent
+  | ContentImage
+  | ContentVideo
+  | ContentDocument;
+
+/**
+ * Result of a publish operation
+ */
+export interface PublishResult {
+  /** Whether the operation was successful */
+  success: boolean;
+  /** Delivery task ID if queued */
+  deliveryId?: string;
+  /** Activity ID that was created */
+  activityId?: string;
+  /** Error message if failed */
+  error?: string;
+}
+
+// ============================================================================
+// Publish to Fediverse
+// ============================================================================
+
+/**
+ * Publish content to the fediverse
+ */
+export async function publishToFediverse(
+  content: PublishableContent,
+  authorHandle: string,
+  options: PublishOptions = { visibility: 'public' }
+): Promise<PublishResult> {
+  try {
+    const actor = getActorByHandle(authorHandle);
+    if (!actor) {
+      return {
+        success: false,
+        error: `Actor not found for handle: ${authorHandle}`
+      };
+    }
+
+    const actorUri = actor.id;
+    const followersUri = getFollowersUri(authorHandle);
+
+    const mentions = parseMentions(content.content);
+
+    const { to, cc } = buildAddressing(
+      options.visibility,
+      actorUri,
+      followersUri,
+      mentions,
+      options.mentionedActors
+    );
+
+    const apObject = await createObject(content, authorHandle);
+    if (!apObject) {
+      return {
+        success: false,
+        error: `Failed to convert content to ActivityPub object: ${content.slug}`
+      };
+    }
+
+    apObject.to = to;
+    apObject.cc = cc;
+
+    if (options.sensitive) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (apObject as any).sensitive = true;
+    }
+    if (options.contentWarning) {
+      apObject.summary = options.contentWarning;
+    }
+
+    if (options.inReplyTo) {
+      apObject.inReplyTo = options.inReplyTo;
+    }
+
+    const activityId = `${actorUri}/activities/${crypto.randomUUID()}`;
+    const activity: Activity = {
+      '@context': [
+        'https://www.w3.org/ns/activitystreams',
+        'https://w3id.org/security/v1'
+      ],
+      id: activityId,
+      type: 'Create',
+      actor: actorUri,
+      published: new Date().toISOString(),
+      to,
+      cc,
+      object: apObject
+    };
+
+    const deliveryTargets = await getDeliveryTargets(
+      authorHandle,
+      options.visibility,
+      mentions,
+      options.mentionedActors
+    );
+
+    if (deliveryTargets.length === 0) {
+      console.log(`[ContentPublishHook] No delivery targets for ${content.slug}`);
+      return {
+        success: true,
+        activityId,
+        deliveryId: undefined
+      };
+    }
+
+    const deliveryId = await queueForDelivery(
+      activity,
+      deliveryTargets,
+      authorHandle
+    );
+
+    console.log(`[ContentPublishHook] Published ${content.type}/${content.slug} to fediverse (${deliveryTargets.length} targets)`);
+
+    return {
+      success: true,
+      deliveryId,
+      activityId
+    };
+  } catch (error) {
+    console.error('[ContentPublishHook] Failed to publish to fediverse:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// ============================================================================
+// Update on Fediverse
+// ============================================================================
+
+/**
+ * Update content on the fediverse
+ */
+export async function updateOnFediverse(
+  content: PublishableContent,
+  authorHandle: string
+): Promise<PublishResult> {
+  try {
+    const actor = getActorByHandle(authorHandle);
+    if (!actor) {
+      return {
+        success: false,
+        error: `Actor not found for handle: ${authorHandle}`
+      };
+    }
+
+    const actorUri = actor.id;
+    const followersUri = getFollowersUri(authorHandle);
+
+    const mentions = parseMentions(content.content);
+
+    const visibility = content.visibility as FederatedVisibility;
+    const { to, cc } = buildAddressing(
+      visibility,
+      actorUri,
+      followersUri,
+      mentions
+    );
+
+    const apObject = await createObject(content, authorHandle);
+    if (!apObject) {
+      return {
+        success: false,
+        error: `Failed to convert content to ActivityPub object: ${content.slug}`
+      };
+    }
+
+    apObject.to = to;
+    apObject.cc = cc;
+    apObject.updated = new Date().toISOString();
+
+    const activityId = `${actorUri}/activities/${crypto.randomUUID()}`;
+    const activity: Activity = {
+      '@context': [
+        'https://www.w3.org/ns/activitystreams',
+        'https://w3id.org/security/v1'
+      ],
+      id: activityId,
+      type: 'Update',
+      actor: actorUri,
+      published: new Date().toISOString(),
+      to,
+      cc,
+      object: apObject
+    };
+
+    const deliveryTargets = await getDeliveryTargets(
+      authorHandle,
+      visibility,
+      mentions
+    );
+
+    if (deliveryTargets.length === 0) {
+      return {
+        success: true,
+        activityId,
+        deliveryId: undefined
+      };
+    }
+
+    const deliveryId = await queueForDelivery(
+      activity,
+      deliveryTargets,
+      authorHandle
+    );
+
+    console.log(`[ContentPublishHook] Updated ${content.type}/${content.slug} on fediverse`);
+
+    return {
+      success: true,
+      deliveryId,
+      activityId
+    };
+  } catch (error) {
+    console.error('[ContentPublishHook] Failed to update on fediverse:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// ============================================================================
+// Delete from Fediverse
+// ============================================================================
+
+/**
+ * Delete content from the fediverse
+ */
+export async function deleteFromFediverse(
+  contentId: string,
+  contentType: string,
+  authorHandle: string
+): Promise<PublishResult> {
+  try {
+    const actor = getActorByHandle(authorHandle);
+    if (!actor) {
+      return {
+        success: false,
+        error: `Actor not found for handle: ${authorHandle}`
+      };
+    }
+
+    const actorUri = actor.id;
+    const followersUri = getFollowersUri(authorHandle);
+
+    const to = ['https://www.w3.org/ns/activitystreams#Public'];
+    const cc = [followersUri];
+
+    const tombstone: Tombstone = {
+      id: contentId,
+      type: 'Tombstone',
+      formerType: contentType,
+      deleted: new Date().toISOString()
+    };
+
+    const activityId = `${actorUri}/activities/${crypto.randomUUID()}`;
+    const activity: Activity = {
+      '@context': [
+        'https://www.w3.org/ns/activitystreams',
+        'https://w3id.org/security/v1'
+      ],
+      id: activityId,
+      type: 'Delete',
+      actor: actorUri,
+      published: new Date().toISOString(),
+      to,
+      cc,
+      object: tombstone
+    };
+
+    const followerUris = getFollowerUris(authorHandle, 'accepted');
+
+    if (followerUris.length === 0) {
+      return {
+        success: true,
+        activityId,
+        deliveryId: undefined
+      };
+    }
+
+    const deliveryId = await queueForDelivery(
+      activity,
+      followerUris,
+      authorHandle
+    );
+
+    console.log(`[ContentPublishHook] Deleted ${contentId} from fediverse`);
+
+    return {
+      success: true,
+      deliveryId,
+      activityId
+    };
+  } catch (error) {
+    console.error('[ContentPublishHook] Failed to delete from fediverse:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// ============================================================================
+// Announce (Boost) Content
+// ============================================================================
+
+/**
+ * Announce (boost/reblog) content on the fediverse
+ */
+export async function announceContent(
+  contentUrl: string,
+  announcerHandle: string
+): Promise<PublishResult> {
+  try {
+    const actor = getActorByHandle(announcerHandle);
+    if (!actor) {
+      return {
+        success: false,
+        error: `Actor not found for handle: ${announcerHandle}`
+      };
+    }
+
+    const actorUri = actor.id;
+    const followersUri = getFollowersUri(announcerHandle);
+    const baseUrl = getSiteBaseUrl();
+
+    const to = ['https://www.w3.org/ns/activitystreams#Public'];
+    const cc = [followersUri];
+
+    const activityId = `${actorUri}/activities/${crypto.randomUUID()}`;
+    const activity: Activity = {
+      '@context': [
+        'https://www.w3.org/ns/activitystreams',
+        'https://w3id.org/security/v1'
+      ],
+      id: activityId,
+      type: 'Announce',
+      actor: actorUri,
+      published: new Date().toISOString(),
+      to,
+      cc,
+      object: contentUrl
+    };
+
+    const followerUris = getFollowerUris(announcerHandle, 'accepted');
+    const deliveryTargets = [...followerUris];
+
+    try {
+      const contentUri = new URL(contentUrl);
+      const instanceDomain = new URL(baseUrl).hostname;
+
+      if (contentUri.hostname !== instanceDomain) {
+        const authorMatch = contentUri.pathname.match(/^\/@([^/]+)/);
+        if (authorMatch) {
+          const authorUri = `https://${contentUri.hostname}/@${authorMatch[1]}`;
+          if (!deliveryTargets.includes(authorUri)) {
+            deliveryTargets.push(authorUri);
+          }
+        }
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+
+    if (deliveryTargets.length === 0) {
+      return {
+        success: true,
+        activityId,
+        deliveryId: undefined
+      };
+    }
+
+    const deliveryId = await queueForDelivery(
+      activity,
+      deliveryTargets,
+      announcerHandle
+    );
+
+    console.log(`[ContentPublishHook] Announced ${contentUrl} to fediverse`);
+
+    return {
+      success: true,
+      deliveryId,
+      activityId
+    };
+  } catch (error) {
+    console.error('[ContentPublishHook] Failed to announce content:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Build to/cc addressing based on visibility
+ */
+function buildAddressing(
+  visibility: FederatedVisibility,
+  actorUri: string,
+  followersUri: string,
+  mentions: ParsedMention[],
+  additionalMentions?: string[]
+): { to: string[]; cc: string[] } {
+  const to: string[] = [];
+  const cc: string[] = [];
+
+  const mentionedActorUris = extractActorUrisFromMentions(mentions);
+
+  if (additionalMentions) {
+    for (const mention of additionalMentions) {
+      if (!mentionedActorUris.includes(mention)) {
+        mentionedActorUris.push(mention);
+      }
+    }
+  }
+
+  switch (visibility) {
+    case 'public':
+      to.push('https://www.w3.org/ns/activitystreams#Public');
+      cc.push(followersUri);
+      cc.push(...mentionedActorUris);
+      break;
+
+    case 'unlisted':
+      to.push(followersUri);
+      cc.push('https://www.w3.org/ns/activitystreams#Public');
+      cc.push(...mentionedActorUris);
+      break;
+
+    case 'followers':
+      to.push(followersUri);
+      cc.push(...mentionedActorUris);
+      break;
+
+    case 'private':
+      to.push(actorUri);
+      break;
+
+    case 'direct':
+      to.push(...mentionedActorUris);
+      break;
+  }
+
+  return {
+    to: [...new Set(to)].filter(Boolean),
+    cc: [...new Set(cc)].filter(Boolean)
+  };
+}
+
+/**
+ * Get delivery targets based on visibility
+ */
+async function getDeliveryTargets(
+  authorHandle: string,
+  visibility: FederatedVisibility,
+  mentions: ParsedMention[],
+  additionalMentions?: string[]
+): Promise<string[]> {
+  const targets: string[] = [];
+  const baseUrl = getSiteBaseUrl();
+
+  const mentionedActorUris = mentions
+    .filter(m => !m.local)
+    .map(m => m.href);
+
+  if (additionalMentions) {
+    for (const mention of additionalMentions) {
+      if (!mentionedActorUris.includes(mention)) {
+        mentionedActorUris.push(mention);
+      }
+    }
+  }
+
+  switch (visibility) {
+    case 'public':
+    case 'unlisted':
+    case 'followers': {
+      const followerUris = getFollowerUris(authorHandle, 'accepted');
+      targets.push(...followerUris);
+
+      if (visibility !== 'followers') {
+        targets.push(...mentionedActorUris);
+      }
+      break;
+    }
+
+    case 'private':
+      break;
+
+    case 'direct':
+      targets.push(...mentionedActorUris);
+      break;
+  }
+
+  const instanceDomain = new URL(baseUrl).hostname;
+  return [...new Set(targets)].filter(uri => {
+    try {
+      const url = new URL(uri);
+      return url.hostname !== instanceDomain;
+    } catch {
+      return false;
+    }
+  });
+}
