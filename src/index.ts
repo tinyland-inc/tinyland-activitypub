@@ -1,5 +1,5 @@
 /**
- * @tinyland-inc/tinyland-activitypub
+ * @tummycrypt/tinyland-activitypub
  *
  * ActivityPub federation implementation for Tinyland.
  * Provides W3C ActivityPub protocol support, HTTP Signatures, WebFinger,

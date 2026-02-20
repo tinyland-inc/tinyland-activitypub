@@ -1,5 +1,5 @@
 /**
- * Type exports for @tinyland-inc/tinyland-activitypub
+ * Type exports for @tummycrypt/tinyland-activitypub
  */
 
 // ActivityStreams 2.0 types

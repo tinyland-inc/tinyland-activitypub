@@ -1,5 +1,5 @@
 {
-  "name": "@tinyland-inc/tinyland-activitypub",
+  "name": "@tummycrypt/tinyland-activitypub",
   "version": "0.1.0",
   "description": "ActivityPub federation system for Tinyland",
   "type": "module",
@@ -33,7 +33,10 @@
       "import": "./dist/ui/index.js"
     }
   },
-  "files": ["dist", "LICENSE"],
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -43,7 +46,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tinyland-inc/tinyland-content-types": "workspace:*"
+    "@tummycrypt/tinyland-content-types": "workspace:*"
   },
   "devDependencies": {
     "@fast-check/vitest": "^0.2.0",
@@ -53,5 +56,14 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/tinyland/projects/tinyland.dev.git",
+    "directory": "packages/tinyland-activitypub"
   }
 }

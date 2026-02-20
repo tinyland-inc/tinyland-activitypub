@@ -1,5 +1,5 @@
 /**
- * Utils exports for @tinyland-inc/tinyland-activitypub
+ * Utils exports for @tummycrypt/tinyland-activitypub
  */
 
 // Mention and hashtag parsing

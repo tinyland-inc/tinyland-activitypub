@@ -4,7 +4,7 @@
  *
  * NOTE: This is a simplified version of the original ContentFederationService
  * that does not depend on unified-content or commerce-schema types directly.
- * Those types are available via @tinyland-inc/tinyland-content-types if needed.
+ * Those types are available via @tummycrypt/tinyland-content-types if needed.
  *
  * The consumer can pass a buildOffers callback to handle commerce integration.
  */
