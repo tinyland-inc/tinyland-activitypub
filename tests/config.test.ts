@@ -1,6 +1,6 @@
-/**
- * Configuration tests
- */
+
+
+
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
@@ -55,7 +55,7 @@ describe('ActivityPub Configuration', () => {
       const config = getActivityPubConfig();
       expect(config.siteBaseUrl).toBe('https://example.com');
       expect(config.federationEnabled).toBe(false);
-      // Defaults preserved
+      
       expect(config.autoApproveFollows).toBe(false);
       expect(config.maxDeliveryRetries).toBe(3);
     });

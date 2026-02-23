@@ -1,6 +1,6 @@
-/**
- * Federation service tests
- */
+
+
+
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { configureActivityPub, resetActivityPubConfig } from '../src/config.js';
@@ -199,7 +199,7 @@ describe('Content Federation', () => {
       const activity = createDeleteActivity(content, baseUrl);
       expect(activity.type).toBe('Delete');
       expect(activity.object).toBeDefined();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
       expect((activity.object as any).type).toBe('Tombstone');
     });
   });

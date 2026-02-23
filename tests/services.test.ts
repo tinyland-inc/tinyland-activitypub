@@ -1,6 +1,6 @@
-/**
- * Service tests (unit tests that don't require filesystem)
- */
+
+
+
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { configureActivityPub, resetActivityPubConfig } from '../src/config.js';
@@ -13,7 +13,7 @@ import {
   SignatureVerificationError
 } from '../src/errors.js';
 
-// UI types
+
 import {
   getVisibilityConfig,
   type ActivityPubStats,
@@ -22,7 +22,7 @@ import {
   type ContentVisibility
 } from '../src/ui/index.js';
 
-// Hooks utilities
+
 import {
   mapVisibility,
   getActivityStreamsType,

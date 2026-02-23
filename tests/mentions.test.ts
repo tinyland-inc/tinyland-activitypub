@@ -1,6 +1,6 @@
-/**
- * Mentions and hashtag parsing tests
- */
+
+
+
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { configureActivityPub, resetActivityPubConfig } from '../src/config.js';

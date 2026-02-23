@@ -1,6 +1,6 @@
-/**
- * HTTP Signature tests
- */
+
+
+
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -133,7 +133,7 @@ describe('HTTP Signatures', () => {
       const parsed = parseSignatureHeader(signatureHeader);
       expect(parsed).not.toBeNull();
 
-      // Manually verify the signature
+      
       const parsedUrl = new URL(url);
       const signatureString = [
         `(request-target): get ${parsedUrl.pathname}`,

@@ -1,6 +1,6 @@
-/**
- * Type tests - verifying type exports compile correctly
- */
+
+
+
 
 import { describe, it, expect } from 'vitest';
 import type {
