@@ -1,15 +1,15 @@
-/**
- * Followers Service
- * Manages follower/following relationships for ActivityPub
- */
+
+
+
+
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getActorUri, getFollowersDir, getFollowingDir } from '../config.js';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
+
+
+
 
 export interface Follower {
   actorUri: string;
@@ -39,9 +39,9 @@ export interface FollowRelationship {
   updatedAt: string;
 }
 
-// ============================================================================
-// Directory Initialization
-// ============================================================================
+
+
+
 
 function ensureFollowersDir(): void {
   const dir = getFollowersDir();
@@ -57,13 +57,13 @@ function ensureFollowingDir(): void {
   }
 }
 
-// ============================================================================
-// Follower Management
-// ============================================================================
 
-/**
- * Add a follower to an actor
- */
+
+
+
+
+
+
 export function addFollower(
   actorHandle: string,
   follower: Follower
@@ -82,23 +82,23 @@ export function addFollower(
     }
   }
 
-  // Check if already following
+  
   const existingIndex = followers.findIndex(f => f.actorUri === follower.actorUri);
 
   if (existingIndex >= 0) {
-    // Update existing follower
+    
     followers[existingIndex] = follower;
   } else {
-    // Add new follower
+    
     followers.push(follower);
   }
 
   writeFileSync(followerPath, JSON.stringify(followers, null, 2), 'utf-8');
 }
 
-/**
- * Remove a follower from an actor
- */
+
+
+
 export function removeFollower(
   actorHandle: string,
   followerUri: string
@@ -122,9 +122,9 @@ export function removeFollower(
   }
 }
 
-/**
- * Get all followers of an actor
- */
+
+
+
 export function getFollowers(
   actorHandle: string,
   status?: Follower['status']
@@ -151,9 +151,9 @@ export function getFollowers(
   }
 }
 
-/**
- * Get follower count for an actor
- */
+
+
+
 export function getFollowerCount(
   actorHandle: string,
   status: Follower['status'] = 'accepted'
@@ -162,9 +162,9 @@ export function getFollowerCount(
   return followers.length;
 }
 
-/**
- * Check if an actor is being followed by another actor
- */
+
+
+
 export function isFollowing(
   followerHandle: string,
   followingHandle: string
@@ -175,13 +175,13 @@ export function isFollowing(
   return following.some(f => f.actorUri === followingActorUri && f.status === 'accepted');
 }
 
-// ============================================================================
-// Following Management
-// ============================================================================
 
-/**
- * Add an actor to following list
- */
+
+
+
+
+
+
 export function addFollowing(
   actorHandle: string,
   following: Following
@@ -200,23 +200,23 @@ export function addFollowing(
     }
   }
 
-  // Check if already following
+  
   const existingIndex = followingList.findIndex(f => f.actorUri === following.actorUri);
 
   if (existingIndex >= 0) {
-    // Update existing following
+    
     followingList[existingIndex] = following;
   } else {
-    // Add new following
+    
     followingList.push(following);
   }
 
   writeFileSync(followingPath, JSON.stringify(followingList, null, 2), 'utf-8');
 }
 
-/**
- * Remove an actor from following list
- */
+
+
+
 export function removeFollowing(
   actorHandle: string,
   followingUri: string
@@ -240,9 +240,9 @@ export function removeFollowing(
   }
 }
 
-/**
- * Get all actors followed by an actor
- */
+
+
+
 export function getFollowing(
   actorHandle: string,
   status?: Following['status']
@@ -269,9 +269,9 @@ export function getFollowing(
   }
 }
 
-/**
- * Get following count for an actor
- */
+
+
+
 export function getFollowingCount(
   actorHandle: string,
   status: Following['status'] = 'accepted'
@@ -280,9 +280,9 @@ export function getFollowingCount(
   return following.length;
 }
 
-/**
- * Get follower URIs for activity delivery
- */
+
+
+
 export function getFollowerUris(
   actorHandle: string,
   status: Follower['status'] = 'accepted'
@@ -291,9 +291,9 @@ export function getFollowerUris(
   return followers.map(f => f.actorUri);
 }
 
-/**
- * Get following URIs for activity delivery
- */
+
+
+
 export function getFollowingUris(
   actorHandle: string,
   status: Following['status'] = 'accepted'
@@ -302,13 +302,13 @@ export function getFollowingUris(
   return following.map(f => f.actorUri);
 }
 
-// ============================================================================
-// Follow Request Management
-// ============================================================================
 
-/**
- * Accept a follow request
- */
+
+
+
+
+
+
 export function acceptFollowRequest(
   actorHandle: string,
   followerUri: string
@@ -320,14 +320,14 @@ export function acceptFollowRequest(
     return;
   }
 
-  // Update follower status
+  
   follower.status = 'accepted';
   addFollower(actorHandle, follower);
 }
 
-/**
- * Reject a follow request
- */
+
+
+
 export function rejectFollowRequest(
   actorHandle: string,
   followerUri: string
@@ -339,25 +339,25 @@ export function rejectFollowRequest(
     return;
   }
 
-  // Update follower status
+  
   follower.status = 'rejected';
   addFollower(actorHandle, follower);
 }
 
-/**
- * Get pending follow requests
- */
+
+
+
 export function getPendingFollowRequests(actorHandle: string): Follower[] {
   return getFollowers(actorHandle, 'pending');
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
 
-/**
- * Extract handle from actor URI
- */
+
+
+
+
+
+
 export function extractHandleFromUri(actorUri: string): string | null {
   try {
     const url = new URL(actorUri);
@@ -368,11 +368,11 @@ export function extractHandleFromUri(actorUri: string): string | null {
   }
 }
 
-/**
- * Build follower object from Follow activity
- */
+
+
+
 export function buildFollowerFromActivity(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   activity: any,
   status: Follower['status'] = 'pending'
 ): Follower | null {

@@ -1,20 +1,20 @@
-/**
- * ActivityStreams 2.0 Core Type Definitions
- * Base types for ActivityPub (which extends ActivityStreams)
- *
- * Reference: https://www.w3.org/TR/activitystreams-core/
- */
 
-// ============================================================================
-// Core Object Type (base for all ActivityPub types)
-// ============================================================================
+
+
+
+
+
+
+
+
+
 
 export interface ASObject {
   id: string;
   type: string;
   '@context'?: string | (string | Record<string, unknown>)[];
 
-  // Common properties
+  
   name?: string;
   summary?: string;
   content?: string;
@@ -33,19 +33,19 @@ export interface ASObject {
   inReplyTo?: string | ASLink | (string | ASLink)[];
   context?: string;
 
-  // Collection endpoints (commonly used for social objects)
+  
   likes?: string | Collection;
   shares?: string | Collection;
   replies?: string | Collection;
 
-  // Media properties (can be partial objects without id)
+  
   icon?: Image | ASLink | { type: string; url: string };
   image?: Image | ASLink | { type: string; url: string };
 }
 
-// ============================================================================
-// Link Type (disjoint from Object)
-// ============================================================================
+
+
+
 
 export interface ASLink {
   href: string;
@@ -58,18 +58,18 @@ export interface ASLink {
   height?: number;
 }
 
-// ============================================================================
-// Activity Types
-// ============================================================================
+
+
+
 
 export interface Activity extends ASObject {
   type: 'Create' | 'Update' | 'Delete' | 'Add' | 'Remove' | 'Move' |
         'Follow' | 'Like' | 'Announce' | 'Undo' | 'Accept' | 'Reject' |
         'Block' | 'Flag';
-  actor: string | ASObject; // URI or embedded Actor
-  object: string | ASObject | (string | ASObject)[]; // Activity target
-  target?: string | ASObject; // For Add/Remove/Move
-  origin?: string | ASObject; // For Move
+  actor: string | ASObject; 
+  object: string | ASObject | (string | ASObject)[]; 
+  target?: string | ASObject; 
+  origin?: string | ASObject; 
   result?: string | ASObject;
   instrument?: string | ASObject;
 }
@@ -77,14 +77,14 @@ export interface Activity extends ASObject {
 export interface IntransitiveActivity extends ASObject {
   type: 'Travel' | 'Arrive' | 'Depart' | 'Question';
   actor: string | ASObject;
-  object?: never; // Intransitive activities have no object
+  object?: never; 
   target?: string | ASObject;
   origin?: string | ASObject;
   result?: string | ASObject;
   instrument?: string | ASObject;
 }
 
-// Specific Activity Types
+
 export interface Follow extends Activity {
   type: 'Follow';
 }
@@ -99,22 +99,22 @@ export interface Announce extends Activity {
 
 export interface Accept extends Activity {
   type: 'Accept';
-  object: Activity | string; // The activity being accepted
+  object: Activity | string; 
 }
 
 export interface Reject extends Activity {
   type: 'Reject';
-  object: Activity | string; // The activity being rejected
+  object: Activity | string; 
 }
 
 export interface Undo extends Activity {
   type: 'Undo';
-  object: Activity | ASObject | string; // The activity being undone
+  object: Activity | ASObject | string; 
 }
 
-// ============================================================================
-// Object Types
-// ============================================================================
+
+
+
 
 export interface Note extends ASObject {
   type: 'Note';
@@ -124,7 +124,7 @@ export interface Note extends ASObject {
   context?: string;
   conversation?: string;
   sensitive?: boolean;
-  summary?: string; // Content warning
+  summary?: string; 
 }
 
 export interface Article extends ASObject {
@@ -146,7 +146,7 @@ export interface Video extends ASObject {
   type: 'Video';
   url: string | ASLink[];
   mediaType?: string;
-  duration?: string; // ISO 8601 duration
+  duration?: string; 
   width?: number;
   height?: number;
 }
@@ -197,9 +197,9 @@ export interface Tombstone extends ASObject {
   deleted: string;
 }
 
-// ============================================================================
-// Collection Types
-// ============================================================================
+
+
+
 
 export interface Collection extends ASObject {
   type: 'Collection';
@@ -221,8 +221,8 @@ export interface OrderedCollection extends ASObject {
 
 export interface CollectionPage extends ASObject {
   type: 'CollectionPage';
-  partOf: string; // URI to parent Collection
-  // Per ActivityPub spec, items can be objects, links, or URI strings
+  partOf: string; 
+  
   items?: (ASObject | ASLink | string)[];
   next?: string;
   prev?: string;
@@ -232,16 +232,16 @@ export interface CollectionPage extends ASObject {
 export interface OrderedCollectionPage extends ASObject {
   type: 'OrderedCollectionPage';
   partOf: string;
-  // Per ActivityPub spec, items can be objects, links, or URI strings
+  
   orderedItems?: (ASObject | ASLink | string)[];
   next?: string;
   prev?: string;
   totalItems?: number;
 }
 
-// ============================================================================
-// Actor Types
-// ============================================================================
+
+
+
 
 export interface Person extends ASObject {
   type: 'Person';
@@ -277,12 +277,12 @@ export interface Group extends ASObject {
   publicKey?: PublicKey;
   discoverable?: boolean;
   indexable?: boolean;
-  // Lemmy extensions
-  attributedTo?: string | string[]; // Moderators
+  
+  attributedTo?: string | string[]; 
   postingRestrictedToMods?: boolean;
   moderators?: string[];
-  sensitive?: boolean; // NSFW flag
-  // Endpoints
+  sensitive?: boolean; 
+  
   endpoints?: {
     sharedInbox?: string;
   };
@@ -317,9 +317,9 @@ export interface Service extends ASObject {
   url?: string;
 }
 
-// ============================================================================
-// Link Types
-// ============================================================================
+
+
+
 
 export interface Mention extends ASLink {
   type: 'Mention';

@@ -1,8 +1,8 @@
-/**
- * Type exports for @tummycrypt/tinyland-activitypub
- */
 
-// ActivityStreams 2.0 types
+
+
+
+
 export type {
   ASObject,
   ASLink,
@@ -39,7 +39,7 @@ export type {
   PublicKey
 } from './activitystreams.js';
 
-// Actor types
+
 export type {
   Actor,
   ActorImage,
@@ -50,7 +50,7 @@ export type {
 
 export { isActor, isActorOfType } from './actor.js';
 
-// Content types
+
 export type {
   Visibility,
   BaseContent,

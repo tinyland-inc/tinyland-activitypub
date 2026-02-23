@@ -1,11 +1,11 @@
-/**
- * Custom error classes for ActivityPub federation
- * Replaces @sveltejs/kit error() with standalone error types
- */
 
-/**
- * Base federation error
- */
+
+
+
+
+
+
+
 export class FederationError extends Error {
   public readonly code: number;
   public readonly details?: unknown;
@@ -18,9 +18,9 @@ export class FederationError extends Error {
   }
 }
 
-/**
- * Error for when a resource is not found
- */
+
+
+
 export class NotFoundError extends FederationError {
   constructor(message: string, details?: unknown) {
     super(message, 404, details);
@@ -28,9 +28,9 @@ export class NotFoundError extends FederationError {
   }
 }
 
-/**
- * Error for unauthorized access
- */
+
+
+
 export class UnauthorizedError extends FederationError {
   constructor(message: string, details?: unknown) {
     super(message, 401, details);
@@ -38,9 +38,9 @@ export class UnauthorizedError extends FederationError {
   }
 }
 
-/**
- * Error for bad requests
- */
+
+
+
 export class BadRequestError extends FederationError {
   constructor(message: string, details?: unknown) {
     super(message, 400, details);
@@ -48,9 +48,9 @@ export class BadRequestError extends FederationError {
   }
 }
 
-/**
- * Error for delivery failures
- */
+
+
+
 export class DeliveryError extends FederationError {
   public readonly recipientUri?: string;
 
@@ -61,9 +61,9 @@ export class DeliveryError extends FederationError {
   }
 }
 
-/**
- * Error for signature verification failures
- */
+
+
+
 export class SignatureVerificationError extends FederationError {
   constructor(message: string, details?: unknown) {
     super(message, 403, details);

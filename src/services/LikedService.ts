@@ -1,8 +1,8 @@
-/**
- * Liked Service
- * Manages outgoing likes (content this actor has liked on other servers)
- * Separate from incoming likes (likes received on our content - see SocialActivityService)
- */
+
+
+
+
+
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
@@ -11,9 +11,9 @@ import { getActorUri, getActivityPubDir } from '../config.js';
 import { queueForDelivery } from './ActivityDeliveryService.js';
 import type { Like, Undo } from '../types/activitystreams.js';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
+
+
+
 
 export interface OutgoingLike {
   id: string;
@@ -23,9 +23,9 @@ export interface OutgoingLike {
   likedAt: string;
 }
 
-// ============================================================================
-// Directory Initialization
-// ============================================================================
+
+
+
 
 function getOutgoingLikesDir(): string {
   return join(getActivityPubDir(), 'outgoing-likes');
@@ -38,13 +38,13 @@ function ensureOutgoingLikesDir(): void {
   }
 }
 
-// ============================================================================
-// Outgoing Likes Management
-// ============================================================================
 
-/**
- * Like a remote object
- */
+
+
+
+
+
+
 export async function likeObject(
   actorHandle: string,
   objectUri: string,
@@ -54,7 +54,7 @@ export async function likeObject(
   const activityId = `${actorUri}/activities/${crypto.randomUUID()}`;
   const likedAt = new Date().toISOString();
 
-  // Create like record
+  
   const like: OutgoingLike = {
     id: crypto.randomUUID(),
     activityId,
@@ -63,7 +63,7 @@ export async function likeObject(
     likedAt
   };
 
-  // Save to actor's likes file
+  
   const likesPath = getLikesPath(actorHandle);
   let likes: OutgoingLike[] = [];
 
@@ -78,7 +78,7 @@ export async function likeObject(
     }
   }
 
-  // Check if already liked
+  
   if (likes.some(l => l.objectUri === objectUri)) {
     console.log(`[LikedService] Already liked ${objectUri}`);
     return likes.find(l => l.objectUri === objectUri)!;
@@ -87,7 +87,7 @@ export async function likeObject(
   likes.unshift(like);
   writeFileSync(likesPath, JSON.stringify(likes, null, 2), 'utf-8');
 
-  // Create and deliver Like activity
+  
   const likeActivity: Like = {
     '@context': [
       'https://www.w3.org/ns/activitystreams',
@@ -102,7 +102,7 @@ export async function likeObject(
     cc: [`${actorUri}/followers`]
   };
 
-  // Deliver to object's inbox (extract from objectUri)
+  
   try {
     const objectUrl = new URL(objectUri);
     const inboxUrl = `${objectUrl.origin}/inbox`;
@@ -115,9 +115,9 @@ export async function likeObject(
   return like;
 }
 
-/**
- * Unlike a remote object
- */
+
+
+
 export async function unlikeObject(
   actorHandle: string,
   objectUri: string
@@ -139,11 +139,11 @@ export async function unlikeObject(
       return;
     }
 
-    // Remove from list
+    
     const filteredLikes = likes.filter(l => l.objectUri !== objectUri);
     writeFileSync(likesPath, JSON.stringify(filteredLikes, null, 2), 'utf-8');
 
-    // Create and deliver Undo activity
+    
     const undoActivity: Undo = {
       '@context': [
         'https://www.w3.org/ns/activitystreams',
@@ -163,7 +163,7 @@ export async function unlikeObject(
       cc: [`${actorUri}/followers`]
     };
 
-    // Deliver to object's inbox
+    
     try {
       const objectUrl = new URL(objectUri);
       const inboxUrl = `${objectUrl.origin}/inbox`;
@@ -177,9 +177,9 @@ export async function unlikeObject(
   }
 }
 
-/**
- * Get all outgoing likes for an actor
- */
+
+
+
 export function getOutgoingLikes(actorHandle: string): OutgoingLike[] {
   const likesPath = getLikesPath(actorHandle);
 
@@ -196,24 +196,24 @@ export function getOutgoingLikes(actorHandle: string): OutgoingLike[] {
   }
 }
 
-/**
- * Get outgoing like count for an actor
- */
+
+
+
 export function getOutgoingLikeCount(actorHandle: string): number {
   return getOutgoingLikes(actorHandle).length;
 }
 
-/**
- * Check if actor has liked an object
- */
+
+
+
 export function hasLiked(actorHandle: string, objectUri: string): boolean {
   const likes = getOutgoingLikes(actorHandle);
   return likes.some(l => l.objectUri === objectUri);
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
+
+
+
 
 function getLikesPath(actorHandle: string): string {
   return join(getOutgoingLikesDir(), `${actorHandle}.json`);

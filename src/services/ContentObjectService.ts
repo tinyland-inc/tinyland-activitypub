@@ -1,7 +1,7 @@
-/**
- * Content Object Service
- * Converts internal content types to ActivityPub objects
- */
+
+
+
+
 
 import { getActorUri } from '../config.js';
 import { parseContent } from '../utils/mentions.js';
@@ -23,15 +23,15 @@ import type {
   ASObject,
 } from '../types/activitystreams.js';
 
-// ============================================================================
-// Base Object Conversion
-// ============================================================================
 
-/**
- * Convert internal content to ActivityPub object
- */
+
+
+
+
+
+
 export async function createObject(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   content: any,
   actorHandle: string
 ): Promise<ASObject | null> {
@@ -67,9 +67,9 @@ export async function createObject(
   }
 }
 
-// ============================================================================
-// Blog Post (Article)
-// ============================================================================
+
+
+
 
 export function convertBlogPostToArticle(
   post: BlogPost,
@@ -105,9 +105,9 @@ export function convertBlogPostToArticle(
   };
 }
 
-// ============================================================================
-// Note (Status Update/Micro-post)
-// ============================================================================
+
+
+
 
 export function convertNoteToNoteObject(
   note: ContentNote,
@@ -147,9 +147,9 @@ export function convertNoteToNoteObject(
   };
 }
 
-// ============================================================================
-// Product (Object)
-// ============================================================================
+
+
+
 
 export function convertProductToObject(
   product: Product,
@@ -190,9 +190,9 @@ export function convertProductToObject(
   };
 }
 
-// ============================================================================
-// Profile (Person)
-// ============================================================================
+
+
+
 
 export function convertProfileToObject(
   profile: Profile,
@@ -217,9 +217,9 @@ export function convertProfileToObject(
   };
 }
 
-// ============================================================================
-// Image (Media)
-// ============================================================================
+
+
+
 
 export function convertImageToImageObject(
   image: ContentImage,
@@ -252,9 +252,9 @@ export function convertImageToImageObject(
   };
 }
 
-// ============================================================================
-// Video (PeerTube Compatible)
-// ============================================================================
+
+
+
 
 export function convertVideoToVideoObject(
   video: ContentVideo,
@@ -297,9 +297,9 @@ export function convertVideoToVideoObject(
   };
 }
 
-// ============================================================================
-// Document (PDF/Docs)
-// ============================================================================
+
+
+
 
 export function convertDocumentToDocumentObject(
   doc: ContentDocument,
@@ -340,11 +340,11 @@ export function convertDocumentToDocumentObject(
   };
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+
+
+
 function createHashtagTags(tags: string[]): any[] {
   return tags.map(tag => ({
     type: 'Hashtag',
@@ -353,7 +353,7 @@ function createHashtagTags(tags: string[]): any[] {
   }));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function createImageAttachment(url: string): any {
   return {
     type: 'Image',

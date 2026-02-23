@@ -1,13 +1,13 @@
-/**
- * ActivityPub Content Hooks
- *
- * Provides hooks for automatically syncing local content
- * changes to the fediverse.
- */
 
-// ============================================================================
-// Core Exports
-// ============================================================================
+
+
+
+
+
+
+
+
+
 
 export {
   publishToFediverse,
@@ -20,9 +20,9 @@ export {
   type FederatedVisibility
 } from './contentPublishHook.js';
 
-// ============================================================================
-// Convenience Functions
-// ============================================================================
+
+
+
 
 import {
   publishToFediverse,
@@ -33,9 +33,9 @@ import {
   type FederatedVisibility
 } from './contentPublishHook.js';
 
-/**
- * Hook called when new content is created
- */
+
+
+
 export async function onContentCreated(
   content: PublishableContent & { fediverseVisibility?: FederatedVisibility },
   authorHandle: string
@@ -52,9 +52,9 @@ export async function onContentCreated(
   return publishToFediverse(content, authorHandle, { visibility });
 }
 
-/**
- * Hook called when content is updated
- */
+
+
+
 export async function onContentUpdated(
   content: PublishableContent & { fediverseVisibility?: FederatedVisibility },
   authorHandle: string
@@ -71,9 +71,9 @@ export async function onContentUpdated(
   return updateOnFediverse(content, authorHandle);
 }
 
-/**
- * Hook called when content is deleted
- */
+
+
+
 export async function onContentDeleted(
   contentId: string,
   contentType: string,
@@ -82,9 +82,9 @@ export async function onContentDeleted(
   return deleteFromFediverse(contentId, contentType, authorHandle);
 }
 
-/**
- * Hook called when content is announced (boosted/reblogged)
- */
+
+
+
 export async function onContentAnnounced(
   contentUrl: string,
   announcerHandle: string
@@ -93,13 +93,13 @@ export async function onContentAnnounced(
   return announceContent(contentUrl, announcerHandle);
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
 
-/**
- * Map internal visibility to federated visibility
- */
+
+
+
+
+
+
 export function mapVisibility(visibility: string): FederatedVisibility {
   switch (visibility) {
     case 'public':
@@ -115,13 +115,13 @@ export function mapVisibility(visibility: string): FederatedVisibility {
   }
 }
 
-// ============================================================================
-// Content Type to ActivityStreams Type Mapping
-// ============================================================================
 
-/**
- * Map internal content type to ActivityStreams type for deletion
- */
+
+
+
+
+
+
 export function getActivityStreamsType(contentType: string): string {
   const typeMap: Record<string, string> = {
     'blog-post': 'Article',
@@ -137,9 +137,9 @@ export function getActivityStreamsType(contentType: string): string {
   return typeMap[contentType] || 'Object';
 }
 
-/**
- * Build ActivityPub object ID from content
- */
+
+
+
 export function buildObjectId(
   baseUrl: string,
   authorHandle: string,

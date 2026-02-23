@@ -1,7 +1,7 @@
-/**
- * ActivityPub Actor Service
- * Manages actor creation, retrieval, and ActivityPub object conversion
- */
+
+
+
+
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
@@ -9,13 +9,13 @@ import crypto from 'crypto';
 import type { Actor, ActorImage, ActorPublicKey, ActorPropertyValue } from '../types/actor.js';
 import { getSiteBaseUrl, getActorsDir } from '../config.js';
 
-// ============================================================================
-// Minimal interfaces for external types (replaces $lib/types/auth and $lib/types/profile)
-// ============================================================================
 
-/**
- * Minimal user interface for actor creation
- */
+
+
+
+
+
+
 export interface ActorUser {
   handle: string;
   displayName?: string;
@@ -23,9 +23,9 @@ export interface ActorUser {
   updatedAt: string;
 }
 
-/**
- * Minimal profile interface for actor creation
- */
+
+
+
 export interface ActorProfile {
   bio?: string;
   avatar?: string;
@@ -42,13 +42,13 @@ export interface ActorProfile {
   visibility?: string;
 }
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
 
-/**
- * Stored actor representation (persisted to file)
- */
+
+
+
+
+
+
 export interface StoredActor {
   id: string;
   handle: string;
@@ -77,9 +77,9 @@ export interface StoredActor {
   updatedAt: string;
 }
 
-// ============================================================================
-// Directory Initialization
-// ============================================================================
+
+
+
 
 function ensureActorsDir(): void {
   const dir = getActorsDir();
@@ -88,13 +88,13 @@ function ensureActorsDir(): void {
   }
 }
 
-// ============================================================================
-// Actor Creation and Management
-// ============================================================================
 
-/**
- * Generate RSA key pair for HTTP signatures
- */
+
+
+
+
+
+
 export function generateKeyPair(): {
   publicKeyId: string;
   publicKeyPem: string;
@@ -122,14 +122,14 @@ export function generateKeyPair(): {
   };
 }
 
-/**
- * Create ActivityPub actor from internal user
- */
+
+
+
 export function createActorFromUser(user: ActorUser, profile?: ActorProfile): Actor {
   const baseUrl = getSiteBaseUrl();
   const actorId = `${baseUrl}/@${user.handle}`;
 
-  // Generate key pair if not exists
+  
   let keyPair: {
     publicKeyId: string;
     publicKeyPem: string;
@@ -148,7 +148,7 @@ export function createActorFromUser(user: ActorUser, profile?: ActorProfile): Ac
     keyPair = generateKeyPair();
   }
 
-  // Build profile fields from social links
+  
   const attachments: ActorPropertyValue[] = [];
 
   if (profile?.website) {
@@ -191,28 +191,28 @@ export function createActorFromUser(user: ActorUser, profile?: ActorProfile): Ac
     });
   }
 
-  // Build icon/avatar
+  
   const icon: ActorImage | undefined = profile?.avatar ? {
     type: 'Image',
     url: `${baseUrl}${profile.avatar}`,
     mediaType: 'image/jpeg'
   } : undefined;
 
-  // Build image/banner
+  
   const image: ActorImage | undefined = profile?.coverImage ? {
     type: 'Image',
     url: `${baseUrl}${profile.coverImage}`,
     mediaType: 'image/jpeg'
   } : undefined;
 
-  // Build public key
+  
   const publicKey: ActorPublicKey = {
     id: keyPair.publicKeyId,
     owner: actorId,
     publicKeyPem: keyPair.publicKeyPem
   };
 
-  // Build actor object
+  
   const actor: Actor = {
     '@context': [
       'https://www.w3.org/ns/activitystreams',
@@ -253,7 +253,7 @@ export function createActorFromUser(user: ActorUser, profile?: ActorProfile): Ac
     }
   };
 
-  // Store actor for later retrieval
+  
   storeActor(user.handle, {
     id: actorId,
     handle: user.handle,
@@ -277,7 +277,7 @@ export function createActorFromUser(user: ActorUser, profile?: ActorProfile): Ac
     publicKeyPem: keyPair.publicKeyPem,
     privateKeyPem: keyPair.privateKeyPem,
     actorType: 'Person',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
     visibility: (profile?.visibility as any) || 'public',
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
@@ -286,9 +286,9 @@ export function createActorFromUser(user: ActorUser, profile?: ActorProfile): Ac
   return actor;
 }
 
-/**
- * Get ActivityPub actor by handle
- */
+
+
+
 export function getActorByHandle(handle: string): Actor | null {
   const storedActor = getStoredActor(handle);
   const baseUrl = getSiteBaseUrl();
@@ -344,9 +344,9 @@ export function getActorByHandle(handle: string): Actor | null {
   };
 }
 
-/**
- * Get stored actor from file system
- */
+
+
+
 function getStoredActor(handle: string): StoredActor | null {
   ensureActorsDir();
   const filePath = join(getActorsDir(), `${handle}.json`);
@@ -364,9 +364,9 @@ function getStoredActor(handle: string): StoredActor | null {
   }
 }
 
-/**
- * Store actor to file system
- */
+
+
+
 function storeActor(handle: string, actor: StoredActor): void {
   ensureActorsDir();
   const filePath = join(getActorsDir(), `${handle}.json`);
@@ -378,17 +378,17 @@ function storeActor(handle: string, actor: StoredActor): void {
   }
 }
 
-/**
- * Get actor's private key for signing
- */
+
+
+
 export function getActorPrivateKey(handle: string): string | null {
   const storedActor = getStoredActor(handle);
   return storedActor?.privateKeyPem || null;
 }
 
-/**
- * Delete actor (e.g., when user is deleted)
- */
+
+
+
 export function deleteActor(handle: string): void {
   ensureActorsDir();
   const filePath = join(getActorsDir(), `${handle}.json`);

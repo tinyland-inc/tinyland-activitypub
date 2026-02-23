@@ -1,8 +1,8 @@
-/**
- * Utils exports for @tummycrypt/tinyland-activitypub
- */
 
-// Mention and hashtag parsing
+
+
+
+
 export {
   parseMentions,
   buildMentionUri,
@@ -18,7 +18,7 @@ export {
   type ParsedContent
 } from './mentions.js';
 
-// Activity utilities
+
 export {
   isActivityType,
   isActivityForLocalActor,

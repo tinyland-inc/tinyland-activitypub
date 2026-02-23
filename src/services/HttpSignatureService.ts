@@ -1,7 +1,7 @@
-/**
- * HTTP Signature Service
- * Handles HTTP Signature verification and generation for ActivityPub federation
- */
+
+
+
+
 
 import crypto from 'crypto';
 import {
@@ -15,9 +15,9 @@ import {
 import { join } from 'path';
 import { getActivityPubConfig, getRemoteActorsCacheDir } from '../config.js';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
+
+
+
 
 export interface SignatureHeader {
   keyId: string;
@@ -34,9 +34,9 @@ export interface PublicKeyInfo {
   ttl: number;
 }
 
-// ============================================================================
-// Configuration
-// ============================================================================
+
+
+
 
 const DEFAULT_SIGNATURE_HEADERS = ['(request-target)', 'host', 'date'];
 const DEFAULT_SIGNATURE_HEADERS_WITH_DIGEST = ['(request-target)', 'host', 'date', 'digest'];
@@ -53,21 +53,21 @@ function ensurePublicKeysCacheDir(): void {
   }
 }
 
-// ============================================================================
-// Digest Header Generation and Verification
-// ============================================================================
 
-/**
- * Generate SHA-256 Digest header value for request body
- */
+
+
+
+
+
+
 export function generateDigest(body: string): string {
   const hash = crypto.createHash('sha256').update(body, 'utf8').digest('base64');
   return `SHA-256=${hash}`;
 }
 
-/**
- * Verify SHA-256 Digest header matches request body
- */
+
+
+
 export function verifyDigest(body: string, digestHeader: string): boolean {
   const digestParts = digestHeader.split(',').map(d => d.trim());
 
@@ -92,13 +92,13 @@ export function verifyDigest(body: string, digestHeader: string): boolean {
   return false;
 }
 
-// ============================================================================
-// HTTP Signature Verification
-// ============================================================================
 
-/**
- * Parse Signature header
- */
+
+
+
+
+
+
 export function parseSignatureHeader(signatureHeader: string): SignatureHeader | null {
   if (!signatureHeader) {
     return null;
@@ -122,9 +122,9 @@ export function parseSignatureHeader(signatureHeader: string): SignatureHeader |
   };
 }
 
-/**
- * Get public key from cache or fetch from actor
- */
+
+
+
 export async function getPublicKey(keyId: string): Promise<PublicKeyInfo | null> {
   const cachedKey = getCachedPublicKey(keyId);
   const config = getActivityPubConfig();
@@ -172,10 +172,10 @@ export async function getPublicKey(keyId: string): Promise<PublicKeyInfo | null>
   }
 }
 
-/**
- * Extract public key from actor object
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+
+
+
 function extractPublicKeyFromActor(actor: any, keyId: string): string | null {
   if (actor.publicKey) {
     const publicKey = typeof actor.publicKey === 'string'
@@ -196,9 +196,9 @@ function extractPublicKeyFromActor(actor: any, keyId: string): string | null {
   return null;
 }
 
-/**
- * Verify HTTP signature
- */
+
+
+
 export async function verifyHttpSignature(
   request: Request,
   signatureHeader: string
@@ -241,9 +241,9 @@ export async function verifyHttpSignature(
   return isValid;
 }
 
-/**
- * Build signature string from request headers
- */
+
+
+
 function buildSignatureString(request: Request, headers: string[]): string {
   const lines: string[] = [];
 
@@ -264,13 +264,13 @@ function buildSignatureString(request: Request, headers: string[]): string {
   return lines.join('\n');
 }
 
-// ============================================================================
-// HTTP Signature Generation
-// ============================================================================
 
-/**
- * Sign an HTTP request
- */
+
+
+
+
+
+
 export function signRequest(
   method: string,
   url: string,
@@ -302,9 +302,9 @@ export function signRequest(
   return signatureHeader;
 }
 
-/**
- * Build signature string for signing
- */
+
+
+
 function buildSignatureStringForSigning(
   method: string,
   url: URL,
@@ -343,9 +343,9 @@ function buildSignatureStringForSigning(
   return lines.join('\n');
 }
 
-/**
- * Create a Request object with HTTP signature and Digest header
- */
+
+
+
 export async function createSignedRequest(
   method: string,
   url: string,
@@ -409,9 +409,9 @@ export async function createSignedRequest(
   return new Request(url, requestInit);
 }
 
-// ============================================================================
-// Public Key Caching
-// ============================================================================
+
+
+
 
 function cachePublicKey(keyId: string, keyInfo: PublicKeyInfo): void {
   ensurePublicKeysCacheDir();
@@ -454,9 +454,9 @@ function getCacheKey(keyId: string): string {
     .replace(/[^\w.-]/g, '_');
 }
 
-/**
- * Clean up expired keys from cache
- */
+
+
+
 export function cleanupExpiredKeys(): void {
   const cacheDir = getPublicKeysCacheDir();
   if (!existsSync(cacheDir)) {
@@ -481,9 +481,9 @@ export function cleanupExpiredKeys(): void {
   }
 }
 
-/**
- * Clear all cached keys
- */
+
+
+
 export function clearKeyCache(): void {
   const cacheDir = getPublicKeysCacheDir();
   if (!existsSync(cacheDir)) {

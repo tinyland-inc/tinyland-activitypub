@@ -1,30 +1,30 @@
-/**
- * WebFinger Service
- * Implements RFC 7033 WebFinger protocol for ActivityPub actor discovery
- *
- * Reference: https://datatracker.ietf.org/doc/html/rfc7033
- */
+
+
+
+
+
+
 
 import type { Actor } from '../types/actor.js';
 import { getActorByHandle } from './ActorService.js';
 import { getSiteBaseUrl, getInstanceDomain, getActivityPubConfig } from '../config.js';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
 
-/**
- * WebFinger resource descriptor
- */
+
+
+
+
+
+
 export interface WebFingerResource {
   subject: string;
   aliases?: string[];
   links: WebFingerLink[];
 }
 
-/**
- * WebFinger link descriptor
- */
+
+
+
 export interface WebFingerLink {
   rel: string;
   type?: string;
@@ -33,19 +33,19 @@ export interface WebFingerLink {
   properties?: Record<string, string | boolean>;
 }
 
-// ============================================================================
-// WebFinger Query Handling
-// ============================================================================
 
-/**
- * Parse WebFinger resource string
- */
+
+
+
+
+
+
 export function parseResource(resource: string): {
   type: 'acct' | 'url';
   handle?: string;
   domain?: string;
 } | null {
-  // Account URI (acct:username@domain)
+  
   if (resource.startsWith('acct:')) {
     const match = resource.match(/^acct:([^@]+)@([^@]+)$/);
     if (match) {
@@ -57,7 +57,7 @@ export function parseResource(resource: string): {
     }
   }
 
-  // URL pattern (https://domain/@username)
+  
   if (resource.startsWith('http://') || resource.startsWith('https://')) {
     try {
       const url = new URL(resource);
@@ -77,10 +77,10 @@ export function parseResource(resource: string): {
   return null;
 }
 
-/**
- * Get WebFinger resource descriptor for actor
- * Verifies the actor exists before returning WebFinger data
- */
+
+
+
+
 export async function getWebFingerForResource(resource: string): Promise<WebFingerResource | null> {
   const parsed = parseResource(resource);
   const instanceDomain = getInstanceDomain();
@@ -90,7 +90,7 @@ export async function getWebFingerForResource(resource: string): Promise<WebFing
     return null;
   }
 
-  // Validate domain matches this instance
+  
   if (parsed.domain !== instanceDomain) {
     return null;
   }
@@ -101,30 +101,30 @@ export async function getWebFingerForResource(resource: string): Promise<WebFing
     return null;
   }
 
-  // Verify the user exists in our system
-  // First check if there's an existing actor (from ActivityPub store)
+  
+  
   const actor = getActorByHandle(handle);
 
-  // If no actor, check if user exists via configurable resolution
+  
   if (!actor) {
     const config = getActivityPubConfig();
     if (config.resolveUser) {
       const user = await config.resolveUser(handle);
       if (!user) {
-        return null; // User doesn't exist in any source
+        return null; 
       }
     } else {
       return null;
     }
   }
 
-  // Build ActivityPub actor URI
+  
   const actorId = `${baseUrl}/@${handle}`;
 
-  // Build profile page URL
+  
   const profileUrl = `${baseUrl}/@${handle}`;
 
-  // Build WebFinger response
+  
   const webFingerResponse: WebFingerResource = {
     subject: resource,
     aliases: [actorId, profileUrl],
@@ -149,9 +149,9 @@ export async function getWebFingerForResource(resource: string): Promise<WebFing
   return webFingerResponse;
 }
 
-/**
- * Get WebFinger resource descriptor from actor object
- */
+
+
+
 export function webFingerFromActor(actor: Actor): WebFingerResource {
   const instanceDomain = getInstanceDomain();
   const baseUrl = getSiteBaseUrl();
@@ -179,9 +179,9 @@ export function webFingerFromActor(actor: Actor): WebFingerResource {
   };
 }
 
-/**
- * Validate WebFinger query parameters
- */
+
+
+
 export function validateWebFingerQuery(params: URLSearchParams): {
   valid: boolean;
   resource?: string;
@@ -197,7 +197,7 @@ export function validateWebFingerQuery(params: URLSearchParams): {
     };
   }
 
-  // Validate resource format
+  
   const parsed = parseResource(resource);
 
   if (!parsed) {
@@ -207,7 +207,7 @@ export function validateWebFingerQuery(params: URLSearchParams): {
     };
   }
 
-  // Validate domain
+  
   if (parsed.domain !== instanceDomain) {
     return {
       valid: false,
@@ -215,7 +215,7 @@ export function validateWebFingerQuery(params: URLSearchParams): {
     };
   }
 
-  // Validate handle (basic validation)
+  
   if (parsed.handle && !/^[a-zA-Z0-9_-]+$/.test(parsed.handle)) {
     return {
       valid: false,

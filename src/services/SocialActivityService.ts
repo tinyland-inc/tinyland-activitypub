@@ -1,7 +1,7 @@
-/**
- * Social Activity Service
- * Handles Follow, Like, Announce, and other social activities
- */
+
+
+
+
 
 import type {
   Activity,
@@ -41,9 +41,9 @@ import {
 import { join } from 'path';
 import crypto from 'crypto';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
+
+
+
 
 export interface LikeRecord {
   id: string;
@@ -77,9 +77,9 @@ export interface Notification {
   content?: string;
 }
 
-// ============================================================================
-// Directory Initialization
-// ============================================================================
+
+
+
 
 function getLikesDir(): string {
   return join(getActivityPubDir(), 'likes');
@@ -105,35 +105,35 @@ function ensureSocialDirs(): void {
   }
 }
 
-// ============================================================================
-// Follow Activity Handling
-// ============================================================================
 
-/**
- * Handle incoming Follow activity
- */
+
+
+
+
+
+
 export async function handleFollowActivity(
   activity: Follow,
   localActorHandle: string
 ): Promise<void> {
   const config = getActivityPubConfig();
 
-  // Validate activity
+  
   if (!activity.object || typeof activity.object !== 'string') {
     throw new Error('Invalid Follow activity: missing object');
   }
 
-  // Extract follower information
+  
   const follower = buildFollowerFromActivity(activity, 'pending');
 
   if (!follower) {
     throw new Error('Invalid Follow activity: could not build follower');
   }
 
-  // Add follower with pending status
+  
   addFollower(localActorHandle, follower);
 
-  // Create notification
+  
   createNotification(localActorHandle, {
     id: crypto.randomUUID(),
     type: 'follow',
@@ -147,7 +147,7 @@ export async function handleFollowActivity(
     read: false
   });
 
-  // Auto-approve or manual approval
+  
   if (config.autoApproveFollows) {
     await acceptFollow(localActorHandle, activity);
   } else {
@@ -155,9 +155,9 @@ export async function handleFollowActivity(
   }
 }
 
-/**
- * Accept a follow request
- */
+
+
+
 export async function acceptFollow(
   localActorHandle: string,
   followActivity: Follow
@@ -166,10 +166,10 @@ export async function acceptFollow(
     ? followActivity.actor
     : followActivity.actor.id;
 
-  // Update follower status
+  
   acceptFollowRequest(localActorHandle, followerUri);
 
-  // Create Accept activity
+  
   const acceptActivity: Accept = {
     '@context': [
       'https://www.w3.org/ns/activitystreams',
@@ -183,15 +183,15 @@ export async function acceptFollow(
     published: new Date().toISOString()
   };
 
-  // Deliver Accept activity to follower
+  
   await queueForDelivery(acceptActivity, [followerUri]);
 
   console.log(`[SocialActivityService] Follow from ${followerUri} accepted`);
 }
 
-/**
- * Reject a follow request
- */
+
+
+
 export async function rejectFollow(
   localActorHandle: string,
   followActivity: Follow
@@ -200,10 +200,10 @@ export async function rejectFollow(
     ? followActivity.actor
     : followActivity.actor.id;
 
-  // Update follower status
+  
   rejectFollowRequest(localActorHandle, followerUri);
 
-  // Create Reject activity
+  
   const rejectActivity: Reject = {
     '@context': [
       'https://www.w3.org/ns/activitystreams',
@@ -217,27 +217,27 @@ export async function rejectFollow(
     published: new Date().toISOString()
   };
 
-  // Deliver Reject activity to follower
+  
   await queueForDelivery(rejectActivity, [followerUri]);
 
   console.log(`[SocialActivityService] Follow from ${followerUri} rejected`);
 }
 
-// ============================================================================
-// Accept/Reject Activity Handling (for outgoing follow requests)
-// ============================================================================
 
-/**
- * Handle incoming Accept activity
- * Called when a remote actor accepts our follow request
- */
+
+
+
+
+
+
+
 export async function handleAcceptActivity(
   activity: Accept,
   localActorHandle: string
 ): Promise<{ success: boolean; remoteActorUri?: string; error?: string }> {
   console.log(`[SocialActivityService] Processing Accept activity: ${activity.id}`);
 
-  // The object should be the Follow activity that was accepted
+  
   const followActivity = activity.object;
 
   if (!followActivity) {
@@ -245,10 +245,10 @@ export async function handleAcceptActivity(
     return { success: false, error: 'Accept activity missing object' };
   }
 
-  // Extract the remote actor URI (the actor who sent the Accept)
+  
   const remoteActorUri = typeof activity.actor === 'string'
     ? activity.actor
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
     : (activity.actor as any).id;
 
   if (!remoteActorUri) {
@@ -256,26 +256,26 @@ export async function handleAcceptActivity(
     return { success: false, error: 'Accept activity missing actor' };
   }
 
-  // Validate that the Follow object references the correct actors
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
+  
   let followObject: any = followActivity;
 
-  // Handle case where object is a URI reference
+  
   if (typeof followActivity === 'string') {
     console.log(`[SocialActivityService] Accept references Follow by URI: ${followActivity}`);
   } else if (typeof followActivity === 'object') {
     followObject = followActivity;
 
-    // Verify this is a Follow activity
+    
     if (followObject.type !== 'Follow') {
       console.error(`[SocialActivityService] Accept object is not a Follow activity: ${followObject.type}`);
       return { success: false, error: `Accept object is not a Follow: ${followObject.type}` };
     }
 
-    // Verify the Follow was targeting the remote actor
+    
     const followTarget = typeof followObject.object === 'string'
       ? followObject.object
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
       : (followObject.object as any)?.id;
 
     if (followTarget && followTarget !== remoteActorUri) {
@@ -283,7 +283,7 @@ export async function handleAcceptActivity(
     }
   }
 
-  // Update the following status from pending to accepted
+  
   const updated = acceptOutgoingFollow(localActorHandle, remoteActorUri);
 
   if (!updated) {
@@ -291,14 +291,14 @@ export async function handleAcceptActivity(
     return { success: false, error: 'No pending follow found', remoteActorUri };
   }
 
-  // Extract actor info for notification
+  
   const actorHandle = extractHandleFromUri(remoteActorUri) || 'unknown';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const actorName = typeof activity.actor === 'object' ? (activity.actor as any).name : undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const actorAvatar = typeof activity.actor === 'object' ? (activity.actor as any).icon?.url : undefined;
 
-  // Create notification for the local user
+  
   createNotification(localActorHandle, {
     id: crypto.randomUUID(),
     type: 'follow_accepted',
@@ -317,10 +317,10 @@ export async function handleAcceptActivity(
   return { success: true, remoteActorUri };
 }
 
-/**
- * Handle incoming Reject activity
- * Called when a remote actor rejects our follow request
- */
+
+
+
+
 export async function handleRejectActivity(
   activity: Reject,
   localActorHandle: string
@@ -336,7 +336,7 @@ export async function handleRejectActivity(
 
   const remoteActorUri = typeof activity.actor === 'string'
     ? activity.actor
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
     : (activity.actor as any).id;
 
   if (!remoteActorUri) {
@@ -344,7 +344,7 @@ export async function handleRejectActivity(
     return { success: false, error: 'Reject activity missing actor' };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   let followObject: any = followActivity;
 
   if (typeof followActivity === 'string') {
@@ -366,9 +366,9 @@ export async function handleRejectActivity(
   }
 
   const actorHandle = extractHandleFromUri(remoteActorUri) || 'unknown';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const actorName = typeof activity.actor === 'object' ? (activity.actor as any).name : undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const actorAvatar = typeof activity.actor === 'object' ? (activity.actor as any).icon?.url : undefined;
 
   createNotification(localActorHandle, {
@@ -389,16 +389,16 @@ export async function handleRejectActivity(
   return { success: true, remoteActorUri };
 }
 
-/**
- * Handle Undo activity (typically for unfollowing)
- */
+
+
+
 export async function handleUndoActivity(
   activity: Undo,
   localActorHandle: string
 ): Promise<void> {
   const object = activity.object;
 
-  // Handle Undo Follow (unfollow)
+  
   if (typeof object === 'object' && 'type' in object && object.type === 'Follow') {
     const followerUri = typeof activity.actor === 'string'
       ? activity.actor
@@ -408,14 +408,14 @@ export async function handleUndoActivity(
     console.log(`[SocialActivityService] Unfollow from ${followerUri}`);
   }
 
-  // Handle Undo Like (unlike)
+  
   if (typeof object === 'object' && 'type' in object && 'id' in object && object.type === 'Like') {
     const likeUri = object.id;
     removeLikeRecord(likeUri);
     console.log(`[SocialActivityService] Unlike ${likeUri}`);
   }
 
-  // Handle Undo Announce (unboost)
+  
   if (typeof object === 'object' && 'type' in object && 'id' in object && object.type === 'Announce') {
     const announceUri = object.id;
     removeAnnounceRecord(announceUri);
@@ -423,13 +423,13 @@ export async function handleUndoActivity(
   }
 }
 
-// ============================================================================
-// Like Activity Handling
-// ============================================================================
 
-/**
- * Handle incoming Like activity
- */
+
+
+
+
+
+
 export function handleLikeActivity(
   activity: Like,
   localActorHandle: string
@@ -481,9 +481,9 @@ export function handleLikeActivity(
   console.log(`[SocialActivityService] Like recorded: ${activity.id}`);
 }
 
-/**
- * Get like records for an object
- */
+
+
+
 export function getLikesForObject(objectUri: string): LikeRecord[] {
   ensureSocialDirs();
   const likes: LikeRecord[] = [];
@@ -507,16 +507,16 @@ export function getLikesForObject(objectUri: string): LikeRecord[] {
   return likes;
 }
 
-/**
- * Get like count for an object
- */
+
+
+
 export function getLikeCount(objectUri: string): number {
   return getLikesForObject(objectUri).length;
 }
 
-/**
- * Remove a like record
- */
+
+
+
 function removeLikeRecord(activityId: string): void {
   const recordPath = getLikeRecordPath(activityId);
 
@@ -533,13 +533,13 @@ function getLikeRecordPath(activityId: string): string {
   return join(getLikesDir(), `${activityId}.json`);
 }
 
-// ============================================================================
-// Announce (Boost) Activity Handling
-// ============================================================================
 
-/**
- * Handle incoming Announce activity
- */
+
+
+
+
+
+
 export function handleAnnounceActivity(
   activity: Announce,
   localActorHandle: string
@@ -591,9 +591,9 @@ export function handleAnnounceActivity(
   console.log(`[SocialActivityService] Announce recorded: ${activity.id}`);
 }
 
-/**
- * Get announce records for an object
- */
+
+
+
 export function getAnnouncesForObject(objectUri: string): AnnounceRecord[] {
   ensureSocialDirs();
   const announces: AnnounceRecord[] = [];
@@ -617,9 +617,9 @@ export function getAnnouncesForObject(objectUri: string): AnnounceRecord[] {
   return announces;
 }
 
-/**
- * Get announce (boost) count for an object
- */
+
+
+
 export function getAnnounceCount(objectUri: string): number {
   return getAnnouncesForObject(objectUri).length;
 }
@@ -640,13 +640,13 @@ function getAnnounceRecordPath(activityId: string): string {
   return join(getAnnouncesDir(), `${activityId}.json`);
 }
 
-// ============================================================================
-// Notification Management
-// ============================================================================
 
-/**
- * Create a notification for a user
- */
+
+
+
+
+
+
 export function createNotification(
   actorHandle: string,
   notification: Notification
@@ -665,10 +665,10 @@ export function createNotification(
     }
   }
 
-  // Add new notification
+  
   notifications.unshift(notification);
 
-  // Limit to 100 notifications
+  
   if (notifications.length > 100) {
     notifications = notifications.slice(0, 100);
   }
@@ -676,9 +676,9 @@ export function createNotification(
   writeFileSync(notificationPath, JSON.stringify(notifications, null, 2), 'utf-8');
 }
 
-/**
- * Get all notifications for a user
- */
+
+
+
 export function getNotifications(
   actorHandle: string,
   includeRead = false
@@ -705,9 +705,9 @@ export function getNotifications(
   }
 }
 
-/**
- * Mark notification as read
- */
+
+
+
 export function markNotificationAsRead(
   actorHandle: string,
   notificationId: string
@@ -734,9 +734,9 @@ export function markNotificationAsRead(
   }
 }
 
-/**
- * Mark all notifications as read
- */
+
+
+
 export function markAllNotificationsAsRead(actorHandle: string): void {
   ensureSocialDirs();
   const notificationPath = join(getNotificationsDir(), `${actorHandle}.json`);
@@ -757,21 +757,21 @@ export function markAllNotificationsAsRead(actorHandle: string): void {
   }
 }
 
-/**
- * Get unread notification count
- */
+
+
+
 export function getUnreadNotificationCount(actorHandle: string): number {
   return getNotifications(actorHandle, false).length;
 }
 
-// ============================================================================
-// Create/Update/Delete Activity Handling
-// ============================================================================
 
-/**
- * Handle incoming Create activity
- * Stores content from remote actors for display in timeline
- */
+
+
+
+
+
+
+
 export async function handleCreateActivity(
   activity: Activity,
   localActorHandle: string
@@ -784,7 +784,7 @@ export async function handleCreateActivity(
 
   const actorUri = typeof activity.actor === 'string'
     ? activity.actor
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
     : (activity.actor as any).id;
 
   const actorHandle = extractHandleFromUri(actorUri) || 'unknown';
@@ -793,9 +793,9 @@ export async function handleCreateActivity(
     ? { id: activity.object, type: 'Unknown' }
     : activity.object;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const objectId = (object as any).id;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const objectType = (object as any).type || 'Unknown';
 
   console.log(`[SocialActivityService] Create activity from ${actorHandle}: ${objectType}`);
@@ -820,10 +820,10 @@ export async function handleCreateActivity(
   const recordPath = join(contentPath, `${contentRecord.id}.json`);
   writeFileSync(recordPath, JSON.stringify(contentRecord, null, 2), 'utf-8');
 
-  // Create notification for mentions or replies
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
+  
   const mentions = (object as any).tag?.filter((t: any) => t.type === 'Mention') || [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const inReplyTo = (object as any).inReplyTo;
 
   if (mentions.length > 0 || inReplyTo) {
@@ -832,15 +832,15 @@ export async function handleCreateActivity(
       type: inReplyTo ? 'reply' : 'mention',
       actorUri,
       actorHandle,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
       actorName: typeof activity.actor === 'object' ? (activity.actor as any).name : undefined,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
       actorAvatar: typeof activity.actor === 'object' ? (activity.actor as any).icon?.url : undefined,
       targetUri: objectId,
       activityId: activity.id,
       createdAt: activity.published || new Date().toISOString(),
       read: false,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
       content: (object as any).content?.substring(0, 200)
     });
   }
@@ -848,9 +848,9 @@ export async function handleCreateActivity(
   console.log(`[SocialActivityService] Stored remote content: ${objectId}`);
 }
 
-/**
- * Handle incoming Update activity
- */
+
+
+
 export async function handleUpdateActivity(
   activity: Activity,
   localActorHandle: string
@@ -865,7 +865,7 @@ export async function handleUpdateActivity(
     ? { id: activity.object }
     : activity.object;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const objectId = (object as any).id;
 
   console.log(`[SocialActivityService] Update activity for: ${objectId}`);
@@ -901,9 +901,9 @@ export async function handleUpdateActivity(
   console.log(`[SocialActivityService] Content not found for update: ${objectId}`);
 }
 
-/**
- * Handle incoming Delete activity
- */
+
+
+
 export async function handleDeleteActivity(
   activity: Activity,
   localActorHandle: string
@@ -916,7 +916,7 @@ export async function handleDeleteActivity(
 
   const objectId = typeof activity.object === 'string'
     ? activity.object
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
     : (activity.object as any).id;
 
   console.log(`[SocialActivityService] Delete activity for: ${objectId}`);
@@ -936,7 +936,7 @@ export async function handleDeleteActivity(
       const record = JSON.parse(content);
 
       if (record.objectId === objectId) {
-        // Create tombstone instead of hard delete (federation compliance)
+        
         record.deleted = true;
         record.deletedAt = new Date().toISOString();
         record.deleteActivityId = activity.id;
@@ -959,9 +959,9 @@ export async function handleDeleteActivity(
   console.log(`[SocialActivityService] Content not found for deletion: ${objectId}`);
 }
 
-/**
- * Get remote content for a local actor (timeline content)
- */
+
+
+
 export function getRemoteContent(
   localActorHandle: string,
   options?: {
@@ -969,7 +969,7 @@ export function getRemoteContent(
     includeDeleted?: boolean;
     since?: string;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
 ): any[] {
   ensureSocialDirs();
   const contentPath = join(getRemoteContentDir(), localActorHandle);
@@ -979,7 +979,7 @@ export function getRemoteContent(
 
   const files = readdirSync(contentPath).filter((file: string) => file.endsWith('.json'));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   const content: any[] = [];
 
   for (const file of files) {
@@ -988,12 +988,12 @@ export function getRemoteContent(
       const fileContent = readFileSync(filePath, 'utf-8');
       const record = JSON.parse(fileContent);
 
-      // Skip deleted unless requested
+      
       if (record.deleted && !options?.includeDeleted) {
         continue;
       }
 
-      // Filter by since date
+      
       if (options?.since && record.published < options.since) {
         continue;
       }
@@ -1004,10 +1004,10 @@ export function getRemoteContent(
     }
   }
 
-  // Sort by published date (newest first)
+  
   content.sort((a, b) => new Date(b.published).getTime() - new Date(a.published).getTime());
 
-  // Apply limit
+  
   if (options?.limit && options.limit > 0) {
     return content.slice(0, options.limit);
   }

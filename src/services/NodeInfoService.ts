@@ -1,18 +1,18 @@
-/**
- * NodeInfo Service
- * Provides instance metadata for federation discovery
- * Implements NodeInfo 2.1 protocol
- *
- * Reference: https://nodeinfo.diaspora.software/protocol
- */
+
+
+
+
+
+
+
 
 import { existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { getSiteBaseUrl, getActorsDir, getActivityPubConfig } from '../config.js';
 
-// ============================================================================
-// Types
-// ============================================================================
+
+
+
 
 export interface NodeInfo {
   version: '2.1';
@@ -47,17 +47,17 @@ export interface NodeInfoLinks {
   }[];
 }
 
-// ============================================================================
-// Statistics Functions
-// ============================================================================
 
-/**
- * Count total registered users
- */
+
+
+
+
+
+
 export function getUserCount(): number {
   try {
     const actorsDir = getActorsDir();
-    // Count actor files
+    
     if (existsSync(actorsDir)) {
       const files = readdirSync(actorsDir).filter(f => f.endsWith('.json'));
       return files.length;
@@ -70,23 +70,23 @@ export function getUserCount(): number {
   }
 }
 
-/**
- * Count public posts (blog + notes)
- * Uses configurable content directory
- */
+
+
+
+
 export function getPublicPostCount(): number {
   let count = 0;
 
   try {
     const contentDir = join(process.cwd(), 'src', 'content');
 
-    // Count blog posts
+    
     const blogDir = join(contentDir, 'blog');
     if (existsSync(blogDir)) {
       count += readdirSync(blogDir).filter(f => f.endsWith('.md')).length;
     }
 
-    // Count notes
+    
     const notesDir = join(contentDir, 'notes');
     if (existsSync(notesDir)) {
       count += readdirSync(notesDir).filter(f => f.endsWith('.md')).length;
@@ -99,21 +99,21 @@ export function getPublicPostCount(): number {
   }
 }
 
-/**
- * Count local comments (future implementation)
- */
+
+
+
 export function getLocalCommentCount(): number {
   return 0;
 }
 
-// ============================================================================
-// NodeInfo Response Builders
-// ============================================================================
 
-/**
- * Get NodeInfo discovery document
- * Endpoint: /.well-known/nodeinfo
- */
+
+
+
+
+
+
+
 export function getNodeInfoLinks(): NodeInfoLinks {
   const baseUrl = getSiteBaseUrl();
 
@@ -131,10 +131,10 @@ export function getNodeInfoLinks(): NodeInfoLinks {
   };
 }
 
-/**
- * Get NodeInfo 2.1 metadata
- * Endpoint: /nodeinfo/2.1
- */
+
+
+
+
 export function getNodeInfo(): NodeInfo {
   const baseUrl = getSiteBaseUrl();
   const config = getActivityPubConfig();
@@ -195,9 +195,9 @@ export function getNodeInfo(): NodeInfo {
   };
 }
 
-/**
- * Get NodeInfo 2.0 (backwards compatible)
- */
+
+
+
 export function getNodeInfo20(): Omit<NodeInfo, 'version'> & { version: '2.0' } {
   const nodeInfo = getNodeInfo();
   return {

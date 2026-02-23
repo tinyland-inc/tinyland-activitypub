@@ -1,7 +1,7 @@
-/**
- * Content Publish Hook
- * Automatically publishes, updates, and deletes content on the fediverse
- */
+
+
+
+
 
 import crypto from 'crypto';
 import { queueForDelivery } from '../services/ActivityDeliveryService.js';
@@ -28,39 +28,39 @@ import type {
   ContentDocument
 } from '../types/content.js';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
 
-/**
- * Visibility levels for federated content
- * - public: Visible to everyone, appears in public timelines
- * - unlisted: Visible to everyone, but not in public timelines
- * - followers: Only visible to followers
- * - private: Only visible to author
- * - direct: Only visible to mentioned actors
- */
+
+
+
+
+
+
+
+
+
+
+
 export type FederatedVisibility = 'public' | 'unlisted' | 'followers' | 'private' | 'direct';
 
-/**
- * Options for publishing content to the fediverse
- */
+
+
+
 export interface PublishOptions {
-  /** Content visibility level */
+  
   visibility: FederatedVisibility;
-  /** Actor URIs that are explicitly mentioned */
+  
   mentionedActors?: string[];
-  /** URI of the post this is replying to */
+  
   inReplyTo?: string;
-  /** Whether content contains sensitive material */
+  
   sensitive?: boolean;
-  /** Content warning text (shown before content) */
+  
   contentWarning?: string;
 }
 
-/**
- * Unified content item type (all publishable content types)
- */
+
+
+
 export type PublishableContent =
   | BlogPost
   | ContentNote
@@ -70,27 +70,27 @@ export type PublishableContent =
   | ContentVideo
   | ContentDocument;
 
-/**
- * Result of a publish operation
- */
+
+
+
 export interface PublishResult {
-  /** Whether the operation was successful */
+  
   success: boolean;
-  /** Delivery task ID if queued */
+  
   deliveryId?: string;
-  /** Activity ID that was created */
+  
   activityId?: string;
-  /** Error message if failed */
+  
   error?: string;
 }
 
-// ============================================================================
-// Publish to Fediverse
-// ============================================================================
 
-/**
- * Publish content to the fediverse
- */
+
+
+
+
+
+
 export async function publishToFediverse(
   content: PublishableContent,
   authorHandle: string,
@@ -130,7 +130,7 @@ export async function publishToFediverse(
     apObject.cc = cc;
 
     if (options.sensitive) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
       (apObject as any).sensitive = true;
     }
     if (options.contentWarning) {
@@ -194,13 +194,13 @@ export async function publishToFediverse(
   }
 }
 
-// ============================================================================
-// Update on Fediverse
-// ============================================================================
 
-/**
- * Update content on the fediverse
- */
+
+
+
+
+
+
 export async function updateOnFediverse(
   content: PublishableContent,
   authorHandle: string
@@ -290,13 +290,13 @@ export async function updateOnFediverse(
   }
 }
 
-// ============================================================================
-// Delete from Fediverse
-// ============================================================================
 
-/**
- * Delete content from the fediverse
- */
+
+
+
+
+
+
 export async function deleteFromFediverse(
   contentId: string,
   contentType: string,
@@ -371,13 +371,13 @@ export async function deleteFromFediverse(
   }
 }
 
-// ============================================================================
-// Announce (Boost) Content
-// ============================================================================
 
-/**
- * Announce (boost/reblog) content on the fediverse
- */
+
+
+
+
+
+
 export async function announceContent(
   contentUrl: string,
   announcerHandle: string
@@ -430,7 +430,7 @@ export async function announceContent(
         }
       }
     } catch {
-      // Ignore URL parsing errors
+      
     }
 
     if (deliveryTargets.length === 0) {
@@ -463,13 +463,13 @@ export async function announceContent(
   }
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
 
-/**
- * Build to/cc addressing based on visibility
- */
+
+
+
+
+
+
 function buildAddressing(
   visibility: FederatedVisibility,
   actorUri: string,
@@ -523,9 +523,9 @@ function buildAddressing(
   };
 }
 
-/**
- * Get delivery targets based on visibility
- */
+
+
+
 async function getDeliveryTargets(
   authorHandle: string,
   visibility: FederatedVisibility,

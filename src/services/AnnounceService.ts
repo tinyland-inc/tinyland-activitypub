@@ -1,8 +1,8 @@
-/**
- * Announce (Boost) Service
- * Manages outgoing announces/boosts (content this actor has boosted)
- * Separate from incoming announces (boosts received on our content)
- */
+
+
+
+
+
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
@@ -11,9 +11,9 @@ import { getActorUri, getActivityPubDir } from '../config.js';
 import { queueForDelivery } from './ActivityDeliveryService.js';
 import type { Announce, Undo } from '../types/activitystreams.js';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
+
+
+
 
 export interface OutgoingAnnounce {
   id: string;
@@ -23,9 +23,9 @@ export interface OutgoingAnnounce {
   announcedAt: string;
 }
 
-// ============================================================================
-// Directory Initialization
-// ============================================================================
+
+
+
 
 function getOutgoingAnnouncesDir(): string {
   return join(getActivityPubDir(), 'outgoing-announces');
@@ -38,13 +38,13 @@ function ensureOutgoingAnnouncesDir(): void {
   }
 }
 
-// ============================================================================
-// Outgoing Announces Management
-// ============================================================================
 
-/**
- * Announce (boost/repost) a remote object
- */
+
+
+
+
+
+
 export async function announceObject(
   actorHandle: string,
   objectUri: string,
@@ -54,7 +54,7 @@ export async function announceObject(
   const activityId = `${actorUri}/activities/${crypto.randomUUID()}`;
   const announcedAt = new Date().toISOString();
 
-  // Create announce record
+  
   const announce: OutgoingAnnounce = {
     id: crypto.randomUUID(),
     activityId,
@@ -63,7 +63,7 @@ export async function announceObject(
     announcedAt
   };
 
-  // Save to actor's announces file
+  
   const announcesPath = getAnnouncesPath(actorHandle);
   let announces: OutgoingAnnounce[] = [];
 
@@ -78,7 +78,7 @@ export async function announceObject(
     }
   }
 
-  // Check if already announced
+  
   if (announces.some(a => a.objectUri === objectUri)) {
     console.log(`[AnnounceService] Already announced ${objectUri}`);
     return announces.find(a => a.objectUri === objectUri)!;
@@ -87,7 +87,7 @@ export async function announceObject(
   announces.unshift(announce);
   writeFileSync(announcesPath, JSON.stringify(announces, null, 2), 'utf-8');
 
-  // Create and deliver Announce activity
+  
   const announceActivity: Announce = {
     '@context': [
       'https://www.w3.org/ns/activitystreams',
@@ -102,7 +102,7 @@ export async function announceObject(
     cc: [`${actorUri}/followers`]
   };
 
-  // Deliver to object's inbox (extract from objectUri)
+  
   try {
     const objectUrl = new URL(objectUri);
     const inboxUrl = `${objectUrl.origin}/inbox`;
@@ -115,9 +115,9 @@ export async function announceObject(
   return announce;
 }
 
-/**
- * Unannounce (remove boost) a remote object
- */
+
+
+
 export async function unannounceObject(
   actorHandle: string,
   objectUri: string
@@ -139,11 +139,11 @@ export async function unannounceObject(
       return;
     }
 
-    // Remove from list
+    
     const filteredAnnounces = announces.filter(a => a.objectUri !== objectUri);
     writeFileSync(announcesPath, JSON.stringify(filteredAnnounces, null, 2), 'utf-8');
 
-    // Create and deliver Undo activity
+    
     const undoActivity: Undo = {
       '@context': [
         'https://www.w3.org/ns/activitystreams',
@@ -163,7 +163,7 @@ export async function unannounceObject(
       cc: [`${actorUri}/followers`]
     };
 
-    // Deliver to object's inbox
+    
     try {
       const objectUrl = new URL(objectUri);
       const inboxUrl = `${objectUrl.origin}/inbox`;
@@ -177,9 +177,9 @@ export async function unannounceObject(
   }
 }
 
-/**
- * Get all outgoing announces for an actor
- */
+
+
+
 export function getOutgoingAnnounces(actorHandle: string): OutgoingAnnounce[] {
   const announcesPath = getAnnouncesPath(actorHandle);
 
@@ -196,24 +196,24 @@ export function getOutgoingAnnounces(actorHandle: string): OutgoingAnnounce[] {
   }
 }
 
-/**
- * Get outgoing announce count for an actor
- */
+
+
+
 export function getOutgoingAnnounceCount(actorHandle: string): number {
   return getOutgoingAnnounces(actorHandle).length;
 }
 
-/**
- * Check if actor has announced an object
- */
+
+
+
 export function hasAnnounced(actorHandle: string, objectUri: string): boolean {
   const announces = getOutgoingAnnounces(actorHandle);
   return announces.some(a => a.objectUri === objectUri);
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
+
+
+
 
 function getAnnouncesPath(actorHandle: string): string {
   return join(getOutgoingAnnouncesDir(), `${actorHandle}.json`);

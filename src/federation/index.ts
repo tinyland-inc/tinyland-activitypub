@@ -1,30 +1,30 @@
-/**
- * Content Federation Service
- * Handles conversion of content to ActivityPub format for federation
- *
- * NOTE: This is a simplified version of the original ContentFederationService
- * that does not depend on unified-content or commerce-schema types directly.
- * Those types are available via @tummycrypt/tinyland-content-types if needed.
- *
- * The consumer can pass a buildOffers callback to handle commerce integration.
- */
+
+
+
+
+
+
+
+
+
+
 
 import type { Activity } from '../types/activitystreams.js';
 
-// ============================================================================
-// Constants
-// ============================================================================
+
+
+
 
 const ACTIVITY_STREAMS_CONTEXT = 'https://www.w3.org/ns/activitystreams';
 const PUBLIC_ADDRESSING = 'https://www.w3.org/ns/activitystreams#Public';
 
-// ============================================================================
-// Types
-// ============================================================================
 
-/**
- * Flexible ActivityPub object for outbound federation
- */
+
+
+
+
+
+
 export interface FederationObject {
   '@context'?: string | string[];
   id: string;
@@ -38,21 +38,21 @@ export interface FederationObject {
   to?: string[];
   cc?: string[];
   url?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   attachment?: Array<{ type: string; url?: string; name?: string; value?: string; mediaType?: string; [key: string]: any }>;
   tag?: Array<{ type: string; href: string; name: string }>;
-  // Note-specific
+  
   sensitive?: boolean;
   inReplyTo?: string;
-  // Event-specific
+  
   startTime?: string;
   endTime?: string;
   location?: { type: string; name?: string };
-  // Video-specific
+  
   duration?: string;
   width?: number;
   height?: number;
-  // Person/Actor-specific
+  
   preferredUsername?: string;
   inbox?: string;
   outbox?: string;
@@ -63,14 +63,14 @@ export interface FederationObject {
   image?: { type: string; url: string };
   discoverable?: boolean;
   manuallyApprovesFollowers?: boolean;
-  // Tombstone
+  
   formerType?: string;
   deleted?: string;
 }
 
-/**
- * Minimal content item for federation (subset of UnifiedContentItem)
- */
+
+
+
 export interface FederableContent {
   slug: string;
   type: string;
@@ -80,30 +80,30 @@ export interface FederableContent {
   publishedAt: string;
   updatedAt?: string;
   authorHandle: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   frontmatter: Record<string, any>;
 }
 
-/**
- * Visibility levels for content
- */
+
+
+
 export type ContentVisibility = 'public' | 'unlisted' | 'followers' | 'private' | 'direct';
 
-/**
- * ActivityPub addressing
- */
+
+
+
 export interface ActivityPubAddressing {
   to: string[];
   cc: string[];
 }
 
-// ============================================================================
-// Addressing
-// ============================================================================
 
-/**
- * Get addressing for visibility level
- */
+
+
+
+
+
+
 export function getAddressingForVisibility(
   visibility: string,
   actorUrl: string,
@@ -143,13 +143,13 @@ export function getAddressingForVisibility(
   }
 }
 
-// ============================================================================
-// ActivityPub ID Generation
-// ============================================================================
 
-/**
- * Generate ActivityPub ID for content
- */
+
+
+
+
+
+
 export function generateActivityPubId(
   content: FederableContent,
   baseUrl: string
@@ -170,9 +170,9 @@ export function generateActivityPubId(
   return `${base}/ap/content/${typePath}/${content.slug}`;
 }
 
-/**
- * Generate ActivityPub ID for an activity
- */
+
+
+
 export function generateActivityId(
   content: FederableContent,
   activityType: string,
@@ -183,13 +183,13 @@ export function generateActivityId(
   return `${base}/ap/activities/${activityType.toLowerCase()}/${content.slug}-${timestamp}`;
 }
 
-// ============================================================================
-// Content to ActivityPub Conversion
-// ============================================================================
 
-/**
- * Convert content to ActivityPub object
- */
+
+
+
+
+
+
 export function contentToActivityPubObject(
   content: FederableContent,
   baseUrl: string,
@@ -221,7 +221,7 @@ export function contentToActivityPubObject(
     cc: addressing.cc
   };
 
-  // Add type-specific fields
+  
   switch (content.type) {
     case 'blog':
       return {
@@ -320,9 +320,9 @@ export function contentToActivityPubObject(
   }
 }
 
-/**
- * Get default ActivityPub type for content type
- */
+
+
+
 function getDefaultActivityPubType(type: string): string {
   const typeMap: Record<string, string> = {
     blog: 'Article',
@@ -338,9 +338,9 @@ function getDefaultActivityPubType(type: string): string {
   return typeMap[type] || 'Object';
 }
 
-/**
- * Build hashtag and mention tags for ActivityPub
- */
+
+
+
 function buildTags(
   tags?: string[],
   additional?: string[]
@@ -379,13 +379,13 @@ function buildTags(
   return allTags.length > 0 ? allTags : undefined;
 }
 
-// ============================================================================
-// Activity Wrapping
-// ============================================================================
 
-/**
- * Wrap content in a Create activity
- */
+
+
+
+
+
+
 export function wrapInCreateActivity(
   content: FederableContent,
   baseUrl: string
@@ -406,9 +406,9 @@ export function wrapInCreateActivity(
   } as Activity;
 }
 
-/**
- * Wrap content update in an Update activity
- */
+
+
+
 export function wrapInUpdateActivity(
   content: FederableContent,
   baseUrl: string
@@ -429,9 +429,9 @@ export function wrapInUpdateActivity(
   } as Activity;
 }
 
-/**
- * Create a Delete activity for content
- */
+
+
+
 export function createDeleteActivity(
   content: FederableContent,
   baseUrl: string
@@ -457,13 +457,13 @@ export function createDeleteActivity(
   } as Activity;
 }
 
-// ============================================================================
-// Federation Helpers
-// ============================================================================
 
-/**
- * Check if content should be federated
- */
+
+
+
+
+
+
 export function shouldFederateContent(content: FederableContent): boolean {
   const visibility = content.fediverseVisibility || content.visibility;
 
@@ -487,24 +487,24 @@ export function shouldFederateContent(content: FederableContent): boolean {
   return true;
 }
 
-/**
- * Get federation visibility level
- */
+
+
+
 export function getFederationVisibility(content: FederableContent): ContentVisibility {
   return (content.fediverseVisibility || content.visibility) as ContentVisibility;
 }
 
-/**
- * Check if content is publicly discoverable
- */
+
+
+
 export function isPubliclyDiscoverable(content: FederableContent): boolean {
   const visibility = getFederationVisibility(content);
   return visibility === 'public';
 }
 
-/**
- * Get ActivityPub addressing for content
- */
+
+
+
 export function getContentAddressing(
   content: FederableContent,
   baseUrl: string
@@ -520,13 +520,13 @@ export function getContentAddressing(
   );
 }
 
-// ============================================================================
-// Batch Operations
-// ============================================================================
 
-/**
- * Convert multiple content items to ActivityPub objects
- */
+
+
+
+
+
+
 export function batchContentToActivityPub(
   items: FederableContent[],
   baseUrl: string
@@ -536,9 +536,9 @@ export function batchContentToActivityPub(
     .map(item => contentToActivityPubObject(item, baseUrl));
 }
 
-/**
- * Wrap multiple content items in Create activities
- */
+
+
+
 export function batchWrapInCreateActivities(
   items: FederableContent[],
   baseUrl: string

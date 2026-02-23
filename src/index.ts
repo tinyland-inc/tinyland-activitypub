@@ -1,12 +1,12 @@
-/**
- * @tummycrypt/tinyland-activitypub
- *
- * ActivityPub federation implementation for Tinyland.
- * Provides W3C ActivityPub protocol support, HTTP Signatures, WebFinger,
- * and NodeInfo for federated social networking.
- */
 
-// Configuration
+
+
+
+
+
+
+
+
 export {
   type ActivityPubConfig,
   configureActivityPub,
@@ -42,7 +42,7 @@ export {
   isBoostable
 } from './config.js';
 
-// Errors
+
 export {
   FederationError,
   NotFoundError,
@@ -52,6 +52,6 @@ export {
   SignatureVerificationError
 } from './errors.js';
 
-// Re-export submodules
+
 export * from './types/index.js';
 export * from './utils/index.js';

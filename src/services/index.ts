@@ -1,8 +1,8 @@
-/**
- * Services barrel export
- */
 
-// Actor Service
+
+
+
+
 export {
   type ActorUser,
   type ActorProfile,
@@ -14,7 +14,7 @@ export {
   deleteActor
 } from './ActorService.js';
 
-// WebFinger Service
+
 export {
   type WebFingerResource,
   type WebFingerLink,
@@ -24,7 +24,7 @@ export {
   validateWebFingerQuery
 } from './WebFingerService.js';
 
-// NodeInfo Service
+
 export {
   type NodeInfo,
   type NodeInfoLinks,
@@ -36,7 +36,7 @@ export {
   getNodeInfo20
 } from './NodeInfoService.js';
 
-// HTTP Signature Service
+
 export {
   type SignatureHeader,
   type PublicKeyInfo,
@@ -51,7 +51,7 @@ export {
   clearKeyCache
 } from './HttpSignatureService.js';
 
-// Content Object Service
+
 export {
   createObject,
   convertBlogPostToArticle,
@@ -63,7 +63,7 @@ export {
   convertDocumentToDocumentObject
 } from './ContentObjectService.js';
 
-// Featured Service
+
 export {
   type FeaturedItem,
   type FrontmatterParser,
@@ -73,7 +73,7 @@ export {
   getFeaturedCollection
 } from './FeaturedService.js';
 
-// Followers Service
+
 export {
   type Follower,
   type Following,
@@ -96,7 +96,7 @@ export {
   buildFollowerFromActivity
 } from './FollowersService.js';
 
-// Follow Service
+
 export {
   type RemoteActor,
   type FollowStatus,
@@ -109,7 +109,7 @@ export {
   getFollowedActors
 } from './FollowService.js';
 
-// Announce Service
+
 export {
   type OutgoingAnnounce,
   announceObject,
@@ -119,7 +119,7 @@ export {
   hasAnnounced
 } from './AnnounceService.js';
 
-// Liked Service
+
 export {
   type OutgoingLike,
   likeObject,
@@ -129,7 +129,7 @@ export {
   hasLiked
 } from './LikedService.js';
 
-// Group Actor Service
+
 export {
   type StoredGroup,
   type CreateGroupInput,
@@ -142,7 +142,7 @@ export {
   getGroupPrivateKey
 } from './GroupActorService.js';
 
-// Activity Delivery Service
+
 export {
   type DeliveryTask,
   type DeliveryStats,
@@ -153,7 +153,7 @@ export {
   cleanupOldTasks
 } from './ActivityDeliveryService.js';
 
-// Social Activity Service
+
 export {
   type LikeRecord,
   type AnnounceRecord,

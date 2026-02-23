@@ -1,16 +1,16 @@
-/**
- * Group Actor Service
- * Manages ActivityPub Group actors for community federation
- *
- * Groups are compatible with:
- * - Lemmy (community federation)
- * - Guppe Groups
- * - Mastodon Groups
- *
- * Reference:
- * - https://www.w3.org/TR/activitypub/#group
- * - https://join-lemmy.org/docs/contributors/05-federation.html
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
@@ -18,9 +18,9 @@ import crypto from 'crypto';
 import type { Group } from '../types/activitystreams.js';
 import { getSiteBaseUrl, getActivityPubDir } from '../config.js';
 
-// ============================================================================
-// Directory Initialization
-// ============================================================================
+
+
+
 
 function getGroupsDir(): string {
   return join(getActivityPubDir(), 'groups');
@@ -33,13 +33,13 @@ function ensureGroupsDir(): void {
   }
 }
 
-// ============================================================================
-// Types
-// ============================================================================
 
-/**
- * Stored group representation
- */
+
+
+
+
+
+
 export interface StoredGroup {
   id: string;
   handle: string;
@@ -55,15 +55,15 @@ export interface StoredGroup {
   privateKeyPem: string;
   createdAt: string;
   updatedAt: string;
-  // Lemmy-specific
-  moderators: string[]; // Array of actor URIs
+  
+  moderators: string[]; 
   categories: string[];
   language?: string;
 }
 
-/**
- * Group creation input
- */
+
+
+
 export interface CreateGroupInput {
   handle: string;
   displayName: string;
@@ -78,13 +78,13 @@ export interface CreateGroupInput {
   moderatorHandles?: string[];
 }
 
-// ============================================================================
-// Key Generation
-// ============================================================================
 
-/**
- * Generate RSA key pair for HTTP signatures
- */
+
+
+
+
+
+
 function generateGroupKeyPair(handle: string): {
   publicKeyId: string;
   publicKeyPem: string;
@@ -113,27 +113,27 @@ function generateGroupKeyPair(handle: string): {
   };
 }
 
-// ============================================================================
-// Group CRUD Operations
-// ============================================================================
 
-/**
- * Create a new group/community
- */
+
+
+
+
+
+
 export function createGroup(input: CreateGroupInput): StoredGroup {
   const baseUrl = getSiteBaseUrl();
   const groupUri = `${baseUrl}/c/${input.handle}`;
 
-  // Check if group already exists
+  
   const existing = getStoredGroup(input.handle);
   if (existing) {
     throw new Error(`Group ${input.handle} already exists`);
   }
 
-  // Generate key pair
+  
   const keyPair = generateGroupKeyPair(input.handle);
 
-  // Build moderator URIs
+  
   const moderators = (input.moderatorHandles || []).map(
     (handle) => `${baseUrl}/@${handle}`
   );
@@ -160,15 +160,15 @@ export function createGroup(input: CreateGroupInput): StoredGroup {
     language: input.language
   };
 
-  // Store group
+  
   storeGroup(input.handle, group);
 
   return group;
 }
 
-/**
- * Get group by handle
- */
+
+
+
 export function getGroupByHandle(handle: string): Group | null {
   const stored = getStoredGroup(handle);
 
@@ -179,9 +179,9 @@ export function getGroupByHandle(handle: string): Group | null {
   return storedGroupToActivityPub(stored);
 }
 
-/**
- * List all groups
- */
+
+
+
 export function listGroups(): StoredGroup[] {
   ensureGroupsDir();
   const groupsDir = getGroupsDir();
@@ -195,7 +195,7 @@ export function listGroups(): StoredGroup[] {
       const content = readFileSync(filePath, 'utf-8');
       const group = JSON.parse(content) as StoredGroup;
 
-      // Only include public groups in listings
+      
       if (group.visibility === 'public') {
         groups.push(group);
       }
@@ -208,9 +208,9 @@ export function listGroups(): StoredGroup[] {
   }
 }
 
-/**
- * Update group
- */
+
+
+
 export function updateGroup(
   handle: string,
   updates: Partial<CreateGroupInput>
@@ -248,9 +248,9 @@ export function updateGroup(
   return updated;
 }
 
-/**
- * Delete group
- */
+
+
+
 export function deleteGroup(handle: string): boolean {
   ensureGroupsDir();
   const filePath = join(getGroupsDir(), `${handle}.json`);
@@ -268,13 +268,13 @@ export function deleteGroup(handle: string): boolean {
   }
 }
 
-// ============================================================================
-// Storage Functions
-// ============================================================================
 
-/**
- * Get stored group from file system
- */
+
+
+
+
+
+
 function getStoredGroup(handle: string): StoredGroup | null {
   ensureGroupsDir();
   const filePath = join(getGroupsDir(), `${handle}.json`);
@@ -292,9 +292,9 @@ function getStoredGroup(handle: string): StoredGroup | null {
   }
 }
 
-/**
- * Store group to file system
- */
+
+
+
 function storeGroup(handle: string, group: StoredGroup): void {
   ensureGroupsDir();
   const filePath = join(getGroupsDir(), `${handle}.json`);
@@ -306,13 +306,13 @@ function storeGroup(handle: string, group: StoredGroup): void {
   }
 }
 
-// ============================================================================
-// ActivityPub Conversion
-// ============================================================================
 
-/**
- * Convert stored group to ActivityPub Group object
- */
+
+
+
+
+
+
 export function storedGroupToActivityPub(stored: StoredGroup): Group {
   const baseUrl = getSiteBaseUrl();
   const groupUri = stored.id;
@@ -322,12 +322,12 @@ export function storedGroupToActivityPub(stored: StoredGroup): Group {
       'https://www.w3.org/ns/activitystreams',
       'https://w3id.org/security/v1',
       {
-        // Lemmy extensions
+        
         lemmy: 'https://join-lemmy.org/ns#',
         postingRestrictedToMods: 'lemmy:postingRestrictedToMods',
         moderators: 'lemmy:moderators',
         sensitive: 'as:sensitive',
-        // Mastodon extensions
+        
         toot: 'http://joinmastodon.org/ns#',
         discoverable: 'toot:discoverable',
         indexable: 'toot:indexable'
@@ -341,8 +341,8 @@ export function storedGroupToActivityPub(stored: StoredGroup): Group {
     inbox: `${groupUri}/inbox`,
     outbox: `${groupUri}/outbox`,
     followers: `${groupUri}/followers`,
-    // Group-specific properties
-    attributedTo: stored.moderators, // Moderators as attributed actors
+    
+    attributedTo: stored.moderators, 
     icon: stored.iconUrl
       ? {
           type: 'Image',
@@ -359,32 +359,32 @@ export function storedGroupToActivityPub(stored: StoredGroup): Group {
             : `${baseUrl}${stored.imageUrl}`
         }
       : undefined,
-    // Discovery
+    
     discoverable: stored.visibility === 'public',
     indexable: stored.visibility === 'public',
-    // Lemmy compatibility
+    
     postingRestrictedToMods: stored.postingRestrictedToMods,
     moderators: stored.moderators,
     sensitive: stored.nsfw,
-    // Authentication
+    
     publicKey: {
       id: stored.publicKeyId,
       owner: groupUri,
       publicKeyPem: stored.publicKeyPem
     },
-    // Timestamps
+    
     published: stored.createdAt,
     updated: stored.updatedAt,
-    // Endpoints
+    
     endpoints: {
       sharedInbox: `${baseUrl}/inbox`
     }
   } as Group;
 }
 
-/**
- * Get group private key for signing
- */
+
+
+
 export function getGroupPrivateKey(handle: string): string | null {
   const stored = getStoredGroup(handle);
   return stored?.privateKeyPem || null;
