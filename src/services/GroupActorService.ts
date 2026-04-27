@@ -17,6 +17,7 @@ import { join } from 'path';
 import crypto from 'crypto';
 import type { Group } from '../types/activitystreams.js';
 import { getSiteBaseUrl, getActivityPubDir } from '../config.js';
+import { encryptPrivateKey, decryptPrivateKey } from './ActorService.js';
 
 
 
@@ -300,7 +301,11 @@ function storeGroup(handle: string, group: StoredGroup): void {
   const filePath = join(getGroupsDir(), `${handle}.json`);
 
   try {
-    writeFileSync(filePath, JSON.stringify(group, null, 2), 'utf-8');
+    const toStore = { ...group };
+    if (toStore.privateKeyPem) {
+      toStore.privateKeyPem = encryptPrivateKey(toStore.privateKeyPem);
+    }
+    writeFileSync(filePath, JSON.stringify(toStore, null, 2), 'utf-8');
   } catch (error) {
     console.error(`[GroupActor] Failed to store group ${handle}:`, error);
   }
@@ -387,5 +392,6 @@ export function storedGroupToActivityPub(stored: StoredGroup): Group {
 
 export function getGroupPrivateKey(handle: string): string | null {
   const stored = getStoredGroup(handle);
-  return stored?.privateKeyPem || null;
+  if (!stored?.privateKeyPem) return null;
+  return decryptPrivateKey(stored.privateKeyPem);
 }
