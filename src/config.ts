@@ -43,7 +43,7 @@ export interface ActivityPubConfig {
 
 
 const defaults: ActivityPubConfig = {
-  siteBaseUrl: 'https://tinyland.dev',
+  siteBaseUrl: process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://tinyland.dev',
   federationEnabled: true,
   defaultVisibility: 'public',
   autoApproveFollows: false,

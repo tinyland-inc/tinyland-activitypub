@@ -9,6 +9,50 @@ import crypto from 'crypto';
 import type { Actor, ActorImage, ActorPublicKey, ActorPropertyValue } from '../types/actor.js';
 import { getSiteBaseUrl, getActorsDir } from '../config.js';
 
+// --- Private key encryption at rest (AES-256-GCM) ---
+const AP_KEY_ALGO = 'aes-256-gcm';
+const AP_KEY_IV_LEN = 12;
+
+function getApEncryptionKey(): Buffer | null {
+  const keyHex = process.env.ACTIVITYPUB_KEY_ENCRYPTION_KEY
+    || process.env.TOTP_ENCRYPTION_KEY
+    || process.env.AUTH_SECRET;
+
+  if (!keyHex || keyHex.length < 16) return null;
+
+  // Derive a 32-byte key from whatever string we have
+  return crypto.createHash('sha256').update(keyHex).digest();
+}
+
+export function encryptPrivateKey(pem: string): string {
+  const key = getApEncryptionKey();
+  if (!key) return pem; // No key configured — store plaintext (dev mode)
+
+  const iv = crypto.randomBytes(AP_KEY_IV_LEN);
+  const cipher = crypto.createCipheriv(AP_KEY_ALGO, key, iv);
+  let encrypted = cipher.update(pem, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag().toString('hex');
+  return `enc:${iv.toString('hex')}:${tag}:${encrypted}`;
+}
+
+export function decryptPrivateKey(stored: string): string {
+  // Plaintext keys don't start with 'enc:'
+  if (!stored.startsWith('enc:')) return stored;
+
+  const key = getApEncryptionKey();
+  if (!key) throw new Error('Private key is encrypted but no encryption key is configured');
+
+  const [, ivHex, tagHex, encHex] = stored.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+  const decipher = crypto.createDecipheriv(AP_KEY_ALGO, key, iv);
+  decipher.setAuthTag(tag);
+  let decrypted = decipher.update(encHex, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
 
 
 
@@ -372,7 +416,12 @@ function storeActor(handle: string, actor: StoredActor): void {
   const filePath = join(getActorsDir(), `${handle}.json`);
 
   try {
-    writeFileSync(filePath, JSON.stringify(actor, null, 2), 'utf-8');
+    // Encrypt private key before writing to disk
+    const toStore = { ...actor };
+    if (toStore.privateKeyPem) {
+      toStore.privateKeyPem = encryptPrivateKey(toStore.privateKeyPem);
+    }
+    writeFileSync(filePath, JSON.stringify(toStore, null, 2), 'utf-8');
   } catch (err) {
     console.error(`Failed to store actor ${handle}:`, err);
   }
@@ -383,7 +432,8 @@ function storeActor(handle: string, actor: StoredActor): void {
 
 export function getActorPrivateKey(handle: string): string | null {
   const storedActor = getStoredActor(handle);
-  return storedActor?.privateKeyPem || null;
+  if (!storedActor?.privateKeyPem) return null;
+  return decryptPrivateKey(storedActor.privateKeyPem);
 }
 
 
