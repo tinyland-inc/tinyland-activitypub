@@ -158,13 +158,26 @@ export {
 
 export {
   type DeliveryTask,
+  type DeliveryQueueOptions,
+  type DeliveryLogEntry,
   type DeliveryStats,
   queueForDelivery,
   getDeliveryTask,
+  getDeliveryLogEntries,
   getDeliveryStats,
   processDeliveryQueue,
   cleanupOldTasks
 } from './ActivityDeliveryService.js';
+
+export {
+  type CreateTombstoneInput,
+  type CreateTombstoneDeleteActivityInput,
+  type TombstoneDeleteValidationResult,
+  createTombstone,
+  createTombstoneDeleteActivity,
+  isTombstoneDeleteActivity,
+  validateTombstoneDeleteActivity
+} from './TombstoneService.js';
 
 
 export {
