@@ -38,6 +38,21 @@ export interface DeliveryTask {
   createdAt: number;
 }
 
+export interface DeliveryQueueOptions {
+  autoProcess?: boolean;
+}
+
+export interface DeliveryLogEntry {
+  timestamp: string;
+  taskId: string;
+  activityId: string;
+  activityType: Activity['type'];
+  recipient: string;
+  status: 'success' | 'error';
+  attempt: number;
+  error?: string;
+}
+
 export interface DeliveryStats {
   total: number;
   pending: number;
@@ -82,7 +97,8 @@ function ensureDeliveryDirs(): void {
 export async function queueForDelivery(
   activity: Activity,
   recipients: string[],
-  senderHandle?: string
+  senderHandle?: string,
+  options: DeliveryQueueOptions = {}
 ): Promise<string> {
   ensureDeliveryDirs();
 
@@ -100,10 +116,11 @@ export async function queueForDelivery(
   const taskPath = join(getDeliveryQueueDir(), `${taskId}.json`);
   writeFileSync(taskPath, JSON.stringify(task, null, 2), 'utf-8');
 
-  
-  processDeliveryQueue(senderHandle).catch(err => {
-    console.error('[DeliveryService] Failed to process queue:', err);
-  });
+  if (options.autoProcess ?? true) {
+    processDeliveryQueue(senderHandle).catch(err => {
+      console.error('[DeliveryService] Failed to process queue:', err);
+    });
+  }
 
   return taskId;
 }
@@ -134,7 +151,8 @@ export function getDeliveryTask(taskId: string): DeliveryTask | null {
 function updateDeliveryTaskStatus(
   taskId: string,
   status: DeliveryTask['status'],
-  errorMsg?: string
+  errorMsg?: string,
+  options: { incrementRetry?: boolean; now?: number } = {}
 ): void {
   const task = getDeliveryTask(taskId);
 
@@ -144,16 +162,21 @@ function updateDeliveryTaskStatus(
 
   task.status = status;
 
-  if (status === 'failed' && errorMsg) {
+  if (errorMsg) {
     task.error = errorMsg;
+  } else {
+    delete task.error;
+  }
+
+  if (options.incrementRetry) {
     task.retryCount++;
 
-    
+    const now = options.now ?? Date.now();
     const backoffMs = Math.min(
       Math.pow(2, task.retryCount) * 1000, 
       300000 
     );
-    task.nextRetryAt = Date.now() + backoffMs;
+    task.nextRetryAt = now + backoffMs;
   }
 
   const taskPath = join(getDeliveryQueueDir(), `${taskId}.json`);
@@ -227,8 +250,11 @@ export async function processDeliveryQueue(senderHandle?: string): Promise<void>
       continue;
     }
 
-    
-    if (task.status !== 'pending' && task.nextRetryAt > now) {
+    if (task.status !== 'pending') {
+      continue;
+    }
+
+    if (task.nextRetryAt > now) {
       continue;
     }
 
@@ -243,6 +269,7 @@ export async function processDeliveryQueue(senderHandle?: string): Promise<void>
 async function processDeliveryTask(task: DeliveryTask, senderHandle?: string): Promise<void> {
   const config = getActivityPubConfig();
   updateDeliveryTaskStatus(task.id, 'delivering');
+  const attempt = task.retryCount + 1;
 
   let successCount = 0;
   let failCount = 0;
@@ -254,12 +281,12 @@ async function processDeliveryTask(task: DeliveryTask, senderHandle?: string): P
       successCount++;
 
       
-      logDelivery(task.id, recipient, 'success');
+      logDelivery(task, recipient, 'success', attempt);
     } catch (err) {
       failCount++;
 
       
-      logDelivery(task.id, recipient, 'error', err instanceof Error ? err.message : 'Unknown error');
+      logDelivery(task, recipient, 'error', attempt, err instanceof Error ? err.message : 'Unknown error');
     }
   }
 
@@ -272,9 +299,11 @@ async function processDeliveryTask(task: DeliveryTask, senderHandle?: string): P
     
     if (task.retryCount >= config.maxDeliveryRetries) {
       
-      updateDeliveryTaskStatus(task.id, 'failed', 'Max retries exceeded');
+      updateDeliveryTaskStatus(task.id, 'failed', 'Max retries exceeded', { incrementRetry: true });
     } else {
-      updateDeliveryTaskStatus(task.id, 'pending', `Failed: ${failCount}/${task.recipients.length} recipients`);
+      updateDeliveryTaskStatus(task.id, 'pending', `Failed: ${failCount}/${task.recipients.length} recipients`, {
+        incrementRetry: true
+      });
     }
   } else {
     
@@ -389,17 +418,22 @@ async function getActorInbox(actorUri: string): Promise<string | null> {
 
 
 function logDelivery(
-  taskId: string,
+  task: DeliveryTask,
   recipient: string,
   status: 'success' | 'error',
+  attempt: number,
   error?: string
 ): void {
-  const logPath = join(getDeliveryLogsDir(), `${taskId}.log`);
+  const logPath = join(getDeliveryLogsDir(), `${task.id}.log`);
 
-  const logEntry = {
+  const logEntry: DeliveryLogEntry = {
     timestamp: new Date().toISOString(),
+    taskId: task.id,
+    activityId: task.activity.id,
+    activityType: task.activity.type,
     recipient,
     status,
+    attempt,
     error
   };
 
@@ -416,6 +450,33 @@ function logDelivery(
   } catch (err) {
     console.error(`[DeliveryService] Failed to log delivery:`, err);
   }
+}
+
+export function getDeliveryLogEntries(taskId: string): DeliveryLogEntry[] {
+  ensureDeliveryDirs();
+
+  const logPath = join(getDeliveryLogsDir(), `${taskId}.log`);
+
+  if (!existsSync(logPath)) {
+    return [];
+  }
+
+  const content = readFileSync(logPath, 'utf-8');
+  const entries: DeliveryLogEntry[] = [];
+
+  for (const line of content.split('\n')) {
+    if (!line.trim()) {
+      continue;
+    }
+
+    try {
+      entries.push(JSON.parse(line) as DeliveryLogEntry);
+    } catch (err) {
+      console.error(`[DeliveryService] Failed to parse delivery log entry for ${taskId}:`, err);
+    }
+  }
+
+  return entries;
 }
 
 
