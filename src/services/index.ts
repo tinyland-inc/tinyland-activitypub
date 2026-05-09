@@ -16,6 +16,19 @@ export {
 
 
 export {
+  type BrandActorType,
+  type BrandActorUris,
+  type CreateBrandActorInput,
+  type BrandActorValidationResult,
+  normalizeBrandSlug,
+  buildBrandActorUris,
+  createBrandActor,
+  createBrandWebFinger,
+  validateBrandActor
+} from './BrandActorService.js';
+
+
+export {
   type WebFingerResource,
   type WebFingerLink,
   parseResource,

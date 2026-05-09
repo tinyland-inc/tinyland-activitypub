@@ -44,7 +44,7 @@ npm_package(
         ":tinyland_activitypub",
     ],
     package = "@tummycrypt/tinyland-activitypub",
-    version = "0.2.3",
+    version = "0.2.4",
     visibility = ["//visibility:public"],
 )
 
