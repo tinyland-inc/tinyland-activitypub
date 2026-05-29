@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@tummycrypt/tinyland-content-types':
-        specifier: ^0.2.2
-        version: 0.2.2
     devDependencies:
       '@fast-check/vitest':
         specifier: ^0.2.0
@@ -154,10 +150,6 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
-
-  '@tummycrypt/tinyland-content-types@0.2.2':
-    resolution: {integrity: sha512-tqpwLNCPpPZI+XcdEGDktt9D5MFW0u8O4Wd9qBZQjABoK+u0bMufI9tCLaQ8eeNoQmFnf44z7gXFJkTakiouaQ==}
-    engines: {node: '>=22.0.0'}
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -581,8 +573,6 @@ snapshots:
   '@rolldown/pluginutils@1.0.0-rc.17': {}
 
   '@standard-schema/spec@1.1.0': {}
-
-  '@tummycrypt/tinyland-content-types@0.2.2': {}
 
   '@tybys/wasm-util@0.10.1':
     dependencies:
