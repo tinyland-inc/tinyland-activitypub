@@ -6,9 +6,10 @@
 
 
 
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { getSiteBaseUrl, getActorsDir, getActivityPubConfig } from '../config.js';
+import matter from 'gray-matter';
+import { getSiteBaseUrl, getActorsDir, getActivityPubConfig, getUsersContentDir } from '../config.js';
 
 
 
@@ -74,22 +75,68 @@ export function getUserCount(): number {
 
 
 
+const PUBLIC_POST_CONTENT_TYPES = ['blog', 'notes'] as const;
+
+function isPublicPublishedPost(filePath: string): boolean {
+  try {
+    const { data } = matter(readFileSync(filePath, 'utf-8'));
+    if (data.published === false || data.draft === true) {
+      return false;
+    }
+    return (data.visibility || 'public') === 'public';
+  } catch {
+    return false;
+  }
+}
+
 export function getPublicPostCount(): number {
+  // TIN-1952 / GAP#6 B3: prefer an injected counter from the host app. The legacy
+  // src/content/blog|notes scan below never matched the user-content layout
+  // (content/users/{handle}/{type}), so localPosts was always 0. The host wires
+  // resolvePublicPostCount via configureActivityPub to read its real content loader.
+  const { resolvePublicPostCount } = getActivityPubConfig();
+  if (resolvePublicPostCount) {
+    try {
+      const injected = resolvePublicPostCount();
+      if (typeof injected === 'number' && Number.isFinite(injected) && injected >= 0) {
+        return injected;
+      }
+    } catch (err) {
+      console.error('[NodeInfo] Injected post counter failed, falling back to scan:', err);
+    }
+  }
+
   let count = 0;
 
   try {
-    const contentDir = join(process.cwd(), 'src', 'content');
-
-    
-    const blogDir = join(contentDir, 'blog');
-    if (existsSync(blogDir)) {
-      count += readdirSync(blogDir).filter(f => f.endsWith('.md')).length;
+    // TIN-1931: fallback scan — posts live under <contentDir>/users/<handle>/{blog,notes},
+    // not the legacy src/content root. Count only public, published posts.
+    const usersDir = getUsersContentDir();
+    if (!existsSync(usersDir)) {
+      return 0;
     }
 
-    
-    const notesDir = join(contentDir, 'notes');
-    if (existsSync(notesDir)) {
-      count += readdirSync(notesDir).filter(f => f.endsWith('.md')).length;
+    const handles = readdirSync(usersDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+
+    for (const handle of handles) {
+      for (const contentType of PUBLIC_POST_CONTENT_TYPES) {
+        const dir = join(usersDir, handle, contentType);
+        if (!existsSync(dir)) {
+          continue;
+        }
+
+        const files = readdirSync(dir).filter(
+          (f) => f.endsWith('.md') || f.endsWith('.mdx')
+        );
+
+        for (const file of files) {
+          if (isPublicPublishedPost(join(dir, file))) {
+            count++;
+          }
+        }
+      }
     }
 
     return count;
@@ -146,7 +193,7 @@ export function getNodeInfo(): NodeInfo {
     software: {
       name: 'tinyland',
       version: config.softwareVersion || '1.0.0',
-      repository: 'https://gitlab.com/tinyland/tinyland.dev',
+      repository: 'https://github.com/tinyland-inc/tinyland.dev',
       homepage: baseUrl
     },
     protocols: ['activitypub'],

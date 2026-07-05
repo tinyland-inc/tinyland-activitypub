@@ -38,7 +38,8 @@ describe('ActivityPub Configuration', () => {
   describe('configureActivityPub', () => {
     it('should use defaults when not configured', () => {
       const config = getActivityPubConfig();
-      expect(config.siteBaseUrl).toBe('https://tinyland.dev');
+      // TIN-1456: default anchors on the hub origin, never the apex.
+      expect(config.siteBaseUrl).toBe('https://hub.tinyland.dev');
       expect(config.federationEnabled).toBe(true);
       expect(config.defaultVisibility).toBe('public');
       expect(config.autoApproveFollows).toBe(false);
@@ -65,7 +66,7 @@ describe('ActivityPub Configuration', () => {
       expect(getSiteBaseUrl()).toBe('https://custom.dev');
 
       resetActivityPubConfig();
-      expect(getSiteBaseUrl()).toBe('https://tinyland.dev');
+      expect(getSiteBaseUrl()).toBe('https://hub.tinyland.dev');
     });
   });
 
@@ -92,9 +93,9 @@ describe('ActivityPub Configuration', () => {
       expect(getInstanceDomain()).toBe('example.com');
     });
 
-    it('should fallback to tinyland.dev for invalid URLs', () => {
+    it('should fallback to hub.tinyland.dev for invalid URLs', () => {
       configureActivityPub({ siteBaseUrl: 'not-a-url' });
-      expect(getInstanceDomain()).toBe('tinyland.dev');
+      expect(getInstanceDomain()).toBe('hub.tinyland.dev');
     });
   });
 

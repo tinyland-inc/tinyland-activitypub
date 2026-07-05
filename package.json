@@ -1,6 +1,6 @@
 {
   "name": "@tummycrypt/tinyland-activitypub",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "ActivityPub federation system for Tinyland",
   "type": "module",
   "license": "Zlib AND LicenseRef-Tinyland-Proprietary",
@@ -47,7 +47,9 @@
     "check:package": "publint",
     "prepublishOnly": "pnpm build && pnpm check:package"
   },
-  "dependencies": {},
+  "dependencies": {
+    "gray-matter": "^4.0.3"
+  },
   "devDependencies": {
     "@fast-check/vitest": "^0.2.0",
     "@types/node": "^22.0.0",

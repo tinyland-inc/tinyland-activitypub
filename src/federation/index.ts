@@ -16,7 +16,9 @@ import type { Activity } from '../types/activitystreams.js';
 
 
 const ACTIVITY_STREAMS_CONTEXT = 'https://www.w3.org/ns/activitystreams';
-const PUBLIC_ADDRESSING = 'https://www.w3.org/ns/activitystreams#Public';
+// TIN-1456: as#Public addressing is gated out of every emitter in this module —
+// controlled audiences (the followers collection) only, until the public
+// federation launch (TIN-1429) lands.
 
 
 
@@ -112,13 +114,13 @@ export function getAddressingForVisibility(
   switch (visibility) {
     case 'public':
       return {
-        to: [PUBLIC_ADDRESSING],
-        cc: [followersUrl]
+        to: [followersUrl],
+        cc: []
       };
     case 'unlisted':
       return {
         to: [followersUrl],
-        cc: [PUBLIC_ADDRESSING]
+        cc: []
       };
     case 'followers':
       return {
@@ -137,8 +139,8 @@ export function getAddressingForVisibility(
       };
     default:
       return {
-        to: [PUBLIC_ADDRESSING],
-        cc: [followersUrl]
+        to: [followersUrl],
+        cc: []
       };
   }
 }
@@ -452,8 +454,9 @@ export function createDeleteActivity(
       formerType: getDefaultActivityPubType(content.type),
       deleted: new Date().toISOString()
     },
-    to: [PUBLIC_ADDRESSING],
-    cc: [followersUrl]
+    // TIN-1456: as#Public is gated — controlled audience only.
+    to: [followersUrl],
+    cc: []
   } as Activity;
 }
 

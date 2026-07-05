@@ -7,7 +7,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import crypto from 'crypto';
-import { getActorUri, getActivityPubDir } from '../config.js';
+import { getActorUri, getActivityPubDir, gatedAudience } from '../config.js';
 import { queueForDelivery } from './ActivityDeliveryService.js';
 import type { Like, Undo } from '../types/activitystreams.js';
 
@@ -98,8 +98,8 @@ export async function likeObject(
     actor: actorUri,
     object: objectUri,
     published: likedAt,
-    to: ['https://www.w3.org/ns/activitystreams#Public'],
-    cc: [`${actorUri}/followers`]
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUri}/followers`, 'public')
   };
 
   
@@ -159,8 +159,8 @@ export async function unlikeObject(
         object: objectUri
       },
       published: new Date().toISOString(),
-      to: ['https://www.w3.org/ns/activitystreams#Public'],
-      cc: [`${actorUri}/followers`]
+      // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+      ...gatedAudience(`${actorUri}/followers`, 'public')
     };
 
     
