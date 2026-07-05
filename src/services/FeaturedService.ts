@@ -9,7 +9,7 @@
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import type { OrderedCollection, Note as NoteObject, Article } from '../types/activitystreams.js';
-import { getSiteBaseUrl, getActorUri } from '../config.js';
+import { getSiteBaseUrl, getActorUri, getContentDir } from '../config.js';
 
 
 
@@ -70,10 +70,13 @@ function parseFrontmatter(content: string): { data: Record<string, unknown>; con
 export function getFeaturedPosts(handle: string, contentDir?: string): FeaturedItem[] {
   const featured: FeaturedItem[] = [];
   const baseUrl = getSiteBaseUrl();
-  const resolvedContentDir = contentDir || join(process.cwd(), 'src', 'content');
+  // TIN-1931: content lives under <contentDir>/users/<handle>/, not the
+  // legacy src/content root.
+  const resolvedContentDir = contentDir || getContentDir();
+  const userDir = join(resolvedContentDir, 'users', handle);
 
-  
-  const blogDir = join(resolvedContentDir, 'blog');
+
+  const blogDir = join(userDir, 'blog');
   if (existsSync(blogDir)) {
     try {
       const files = readdirSync(blogDir).filter(f => f.endsWith('.md'));
@@ -103,7 +106,7 @@ export function getFeaturedPosts(handle: string, contentDir?: string): FeaturedI
   }
 
   
-  const notesDir = join(resolvedContentDir, 'notes');
+  const notesDir = join(userDir, 'notes');
   if (existsSync(notesDir)) {
     try {
       const files = readdirSync(notesDir).filter(f => f.endsWith('.md'));
@@ -133,7 +136,7 @@ export function getFeaturedPosts(handle: string, contentDir?: string): FeaturedI
   }
 
   
-  const productsDir = join(resolvedContentDir, 'products');
+  const productsDir = join(userDir, 'products');
   if (existsSync(productsDir)) {
     try {
       const files = readdirSync(productsDir).filter(f => f.endsWith('.md'));

@@ -39,6 +39,7 @@ ts_project(
         ":node_modules",
         ":node_modules/@tummycrypt/tinyland-content-types",
         ":node_modules/@types/node",
+        ":node_modules/gray-matter",
     ],
     visibility = ["//visibility:public"],
 )
@@ -50,7 +51,7 @@ npm_package(
         ":tinyland_activitypub",
     ],
     package = "@tummycrypt/tinyland-activitypub",
-    version = "0.2.5",
+    version = "0.3.0",
     visibility = ["//visibility:public"],
 )
 

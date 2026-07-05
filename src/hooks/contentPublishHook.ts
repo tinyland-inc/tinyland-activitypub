@@ -10,7 +10,8 @@ import { createObject } from '../services/ContentObjectService.js';
 import { getFollowerUris } from '../services/FollowersService.js';
 import {
   getFollowersUri,
-  getSiteBaseUrl
+  getSiteBaseUrl,
+  gatedAudience
 } from '../config.js';
 import {
   parseMentions,
@@ -314,8 +315,8 @@ export async function deleteFromFediverse(
     const actorUri = actor.id;
     const followersUri = getFollowersUri(authorHandle);
 
-    const to = ['https://www.w3.org/ns/activitystreams#Public'];
-    const cc = [followersUri];
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    const { to, cc } = gatedAudience(followersUri, 'public');
 
     const tombstone: Tombstone = {
       id: contentId,
@@ -395,8 +396,8 @@ export async function announceContent(
     const followersUri = getFollowersUri(announcerHandle);
     const baseUrl = getSiteBaseUrl();
 
-    const to = ['https://www.w3.org/ns/activitystreams#Public'];
-    const cc = [followersUri];
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    const { to, cc } = gatedAudience(followersUri, 'public');
 
     const activityId = `${actorUri}/activities/${crypto.randomUUID()}`;
     const activity: Activity = {
@@ -492,14 +493,14 @@ function buildAddressing(
 
   switch (visibility) {
     case 'public':
-      to.push('https://www.w3.org/ns/activitystreams#Public');
-      cc.push(followersUri);
+      // TIN-1456: as#Public is gated — downgrade to the followers collection.
+      to.push(followersUri);
       cc.push(...mentionedActorUris);
       break;
 
     case 'unlisted':
+      // TIN-1456: as#Public is gated — followers collection only.
       to.push(followersUri);
-      cc.push('https://www.w3.org/ns/activitystreams#Public');
       cc.push(...mentionedActorUris);
       break;
 

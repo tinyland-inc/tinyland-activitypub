@@ -196,18 +196,16 @@ export function buildAddressing(params: {
   public?: boolean;
   followers?: boolean;
   mentions?: string[];
+  followersUri?: string;
 }): { to: string[]; cc: string[] } {
   const to: string[] = [];
   const cc: string[] = [];
 
-  
-  if (params.public) {
-    to.push('https://www.w3.org/ns/activitystreams#Public');
-  }
-
-  
-  if (params.followers) {
-    cc.push('https://www.w3.org/ns/activitystreams#Public');
+  // TIN-1456: as#Public is gated — public/followers addressing downgrades to
+  // the caller-supplied followers collection (a controlled audience). Without
+  // a followersUri no broadcast audience is emitted at all.
+  if ((params.public || params.followers) && params.followersUri) {
+    to.push(params.followersUri);
   }
 
   

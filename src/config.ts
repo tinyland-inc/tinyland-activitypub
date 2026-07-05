@@ -27,15 +27,23 @@ export interface ActivityPubConfig {
   defaultPageSize: number;
   maxPageSize: number;
   activitypubDir: string;
+  contentDir: string;
   
   softwareVersion?: string;
-  
+
   resolveUser?: (handle: string) => Promise<{
     handle: string;
     displayName?: string;
     bio?: string;
     avatarUrl?: string;
   } | null>;
+
+  // TIN-1952 / GAP#6 B3: optional injected counter for NodeInfo localPosts.
+  // The package must not assume a content layout (the legacy NodeInfoService scan
+  // of src/content/blog never existed under the user-content model and always
+  // returned 0). When provided, the host app supplies the public post count from
+  // its own content loader; when absent, NodeInfo falls back to the legacy scan.
+  resolvePublicPostCount?: () => number;
 }
 
 
@@ -43,7 +51,12 @@ export interface ActivityPubConfig {
 
 
 const defaults: ActivityPubConfig = {
-  siteBaseUrl: process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://tinyland.dev',
+  // TIN-1456: hub.tinyland.dev is the SOLE public ActivityPub authority. The
+  // apex (tinyland.dev) is tailnet-only and must never mint AP ids, so the
+  // default deliberately ignores PUBLIC_SITE_URL / SITE_URL (both apex-bound
+  // in deployment) and anchors on the federation origin instead.
+  siteBaseUrl:
+    process.env.TINYLAND_FEDERATION_ORIGIN || 'https://hub.tinyland.dev',
   federationEnabled: true,
   defaultVisibility: 'public',
   autoApproveFollows: false,
@@ -59,6 +72,7 @@ const defaults: ActivityPubConfig = {
   defaultPageSize: 20,
   maxPageSize: 100,
   activitypubDir: '.activitypub',
+  contentDir: 'content',
 };
 
 
@@ -66,6 +80,15 @@ const defaults: ActivityPubConfig = {
 
 
 let _config: ActivityPubConfig | null = null;
+
+// TIN-1456: unconfigured-visibility canary. TIN-1952 B1 originally kept the
+// package default on the apex so a missing configureActivityPub() call would
+// fail visibly — but that canary's failure mode was the leak itself (apex ids
+// delivered to remote instances are cached irreversibly). The default is now
+// fail-safe (hub origin, never the apex), and visibility is preserved by
+// warning once when the config is read without configureActivityPub() ever
+// having been called.
+let _warnedUnconfigured = false;
 
 
 
@@ -78,7 +101,15 @@ export function configureActivityPub(config: Partial<ActivityPubConfig>): void {
 
 
 export function getActivityPubConfig(): ActivityPubConfig {
-  if (!_config) _config = { ...defaults };
+  if (!_config) {
+    if (!_warnedUnconfigured) {
+      _warnedUnconfigured = true;
+      console.warn(
+        `tinyland-activitypub: configureActivityPub() was never called; defaulting siteBaseUrl to the hub origin (${defaults.siteBaseUrl})`
+      );
+    }
+    _config = { ...defaults };
+  }
   return _config;
 }
 
@@ -87,6 +118,7 @@ export function getActivityPubConfig(): ActivityPubConfig {
 
 export function resetActivityPubConfig(): void {
   _config = null;
+  _warnedUnconfigured = false;
 }
 
 
@@ -108,7 +140,8 @@ export function getInstanceDomain(): string {
   try {
     return new URL(config.siteBaseUrl).hostname;
   } catch {
-    return 'tinyland.dev';
+    // TIN-1456: fall back to the hub, never the apex.
+    return 'hub.tinyland.dev';
   }
 }
 
@@ -119,6 +152,22 @@ export function getActivityPubDir(): string {
   const config = getActivityPubConfig();
   const dir = config.activitypubDir;
   return dir.startsWith('/') ? dir : join(process.cwd(), dir);
+}
+
+
+
+
+export function getContentDir(): string {
+  const config = getActivityPubConfig();
+  const dir = config.contentDir;
+  return dir.startsWith('/') ? dir : join(process.cwd(), dir);
+}
+
+
+
+
+export function getUsersContentDir(): string {
+  return join(getContentDir(), 'users');
 }
 
 
@@ -280,6 +329,37 @@ export function getLikedUri(handle: string): string {
 
 export function getWebFingerResource(handle: string): string {
   return `acct:${handle}@${getInstanceDomain()}`;
+}
+
+
+
+
+export const AS_PUBLIC_COLLECTION =
+  'https://www.w3.org/ns/activitystreams#Public';
+
+/**
+ * TIN-1456: central audience gate for every legacy emitter in this package.
+ *
+ * The legacy per-user AP surface must NOT address the public collection
+ * (as#Public) until the TIN-1429 public federation launch lands — emitted
+ * audiences are controlled collections only. `public`, `unlisted`, and
+ * `followers` all downgrade to the actor's followers collection; anything
+ * else gets an empty audience. This is deliberately a single reversible
+ * choke point: when the public launch ships, restore as#Public here instead
+ * of editing every emitter.
+ */
+export function gatedAudience(
+  followersUri: string,
+  visibility?: string,
+): { to: string[]; cc: string[] } {
+  switch (visibility ?? 'public') {
+    case 'public':
+    case 'unlisted':
+    case 'followers':
+      return { to: followersUri ? [followersUri] : [], cc: [] };
+    default:
+      return { to: [], cc: [] };
+  }
 }
 
 

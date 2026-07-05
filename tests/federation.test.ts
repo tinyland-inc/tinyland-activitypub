@@ -97,10 +97,11 @@ describe('Content Federation', () => {
       expect(obj.content).toBe('Hello, fediverse!');
     });
 
-    it('should set public addressing for public content', () => {
+    it('should gate public content to the followers collection (TIN-1456)', () => {
       const content = makeBlogContent({ visibility: 'public' });
       const obj = contentToActivityPubObject(content, baseUrl);
-      expect(obj.to).toContain('https://www.w3.org/ns/activitystreams#Public');
+      expect(obj.to).not.toContain('https://www.w3.org/ns/activitystreams#Public');
+      expect(obj.to![0]).toContain('/followers');
     });
 
     it('should set followers addressing for followers-only content', () => {
@@ -238,15 +239,18 @@ describe('Content Federation', () => {
   });
 
   describe('getAddressingForVisibility', () => {
-    it('should return public addressing', () => {
+    it('should gate public addressing to the followers collection (TIN-1456)', () => {
       const result = getAddressingForVisibility('public', 'actor', 'followers');
-      expect(result.to).toContain('https://www.w3.org/ns/activitystreams#Public');
+      expect(result.to).not.toContain('https://www.w3.org/ns/activitystreams#Public');
+      expect(result.to).toContain('followers');
+      expect(result.cc).toEqual([]);
     });
 
-    it('should return unlisted addressing', () => {
+    it('should gate unlisted addressing to the followers collection (TIN-1456)', () => {
       const result = getAddressingForVisibility('unlisted', 'actor', 'followers');
       expect(result.to).toContain('followers');
-      expect(result.cc).toContain('https://www.w3.org/ns/activitystreams#Public');
+      expect(result.cc).not.toContain('https://www.w3.org/ns/activitystreams#Public');
+      expect(result.cc).toEqual([]);
     });
 
     it('should return private addressing', () => {

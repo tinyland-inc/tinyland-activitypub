@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from '
 import { join } from 'path';
 import crypto from 'crypto';
 import type { Actor, ActorImage, ActorPublicKey, ActorPropertyValue } from '../types/actor.js';
-import { getSiteBaseUrl, getActorsDir } from '../config.js';
+import { getSiteBaseUrl, getActorsDir, getActorUri } from '../config.js';
 
 // --- Private key encryption at rest (AES-256-GCM) ---
 const AP_KEY_ALGO = 'aes-256-gcm';
@@ -184,7 +184,9 @@ export function createActorFromUser(user: ActorUser, profile?: ActorProfile): Ac
 
   if (storedActor) {
     keyPair = {
-      publicKeyId: storedActor.publicKeyId,
+      // TIN-1456: re-anchor persisted (possibly apex-bound) key ids on the
+      // configured federation origin; key material itself is reused as-is.
+      publicKeyId: `${actorId}#main-key`,
       publicKeyPem: storedActor.publicKeyPem,
       privateKeyPem: storedActor.privateKeyPem
     };
@@ -341,6 +343,13 @@ export function getActorByHandle(handle: string): Actor | null {
     return null;
   }
 
+  // TIN-1456: never trust the persisted actor id as an AP authority. Actors
+  // minted before the hub cutover carry apex (tinyland.dev) ids on disk;
+  // re-anchor id, key id, and every derived collection URI on the configured
+  // federation origin at read time.
+  const actorId = getActorUri(storedActor.handle);
+  const publicKeyId = `${actorId}#main-key`;
+
   return {
     '@context': [
       'https://www.w3.org/ns/activitystreams',
@@ -352,18 +361,18 @@ export function getActorByHandle(handle: string): Actor | null {
         featured: 'toot:featured'
       }
     ],
-    id: storedActor.id,
+    id: actorId,
     type: storedActor.actorType,
-    inbox: `${storedActor.id}/inbox`,
-    outbox: `${storedActor.id}/outbox`,
-    following: `${storedActor.id}/following`,
-    followers: `${storedActor.id}/followers`,
-    liked: `${storedActor.id}/liked`,
-    featured: `${storedActor.id}/featured`,
+    inbox: `${actorId}/inbox`,
+    outbox: `${actorId}/outbox`,
+    following: `${actorId}/following`,
+    followers: `${actorId}/followers`,
+    liked: `${actorId}/liked`,
+    featured: `${actorId}/featured`,
     preferredUsername: storedActor.handle,
     name: storedActor.displayName || storedActor.handle,
     summary: storedActor.bio || '',
-    url: storedActor.id,
+    url: actorId,
     icon: storedActor.avatarUrl ? {
       type: 'Image',
       url: `${baseUrl}${storedActor.avatarUrl}`
@@ -376,8 +385,8 @@ export function getActorByHandle(handle: string): Actor | null {
     indexable: storedActor.indexable,
     manuallyApprovesFollowers: storedActor.manuallyApprovesFollowers,
     publicKey: {
-      id: storedActor.publicKeyId,
-      owner: storedActor.id,
+      id: publicKeyId,
+      owner: actorId,
       publicKeyPem: storedActor.publicKeyPem
     },
     published: storedActor.createdAt,

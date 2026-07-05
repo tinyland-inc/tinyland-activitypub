@@ -241,6 +241,111 @@ export async function verifyHttpSignature(
   return isValid;
 }
 
+export type VerifyFailureReason =
+  | 'missing-signature-header'
+  | 'unparseable-signature-header'
+  | 'unsupported-algorithm'
+  | 'public-key-unavailable'
+  | 'signature-mismatch'
+  | 'digest-mismatch'
+  | 'missing-digest-for-body'
+  | 'date-out-of-window';
+
+export interface VerifyResult {
+  ok: boolean;
+  keyId: string | null;
+  reason: VerifyFailureReason | null;
+}
+
+export interface VerifyOptions {
+
+  request: Request;
+
+  rawBody?: string;
+
+  publicKeyResolver?: (keyId: string) => Promise<PublicKeyInfo | null> | PublicKeyInfo | null;
+
+  clockSkewSeconds?: number;
+}
+
+
+
+
+export async function verify(options: VerifyOptions): Promise<VerifyResult> {
+  const { request, rawBody, publicKeyResolver, clockSkewSeconds = 3600 } = options;
+  const signatureHeader = request.headers.get('signature');
+
+  if (!signatureHeader) {
+    return { ok: false, keyId: null, reason: 'missing-signature-header' };
+  }
+
+  const signature = parseSignatureHeader(signatureHeader);
+
+  if (!signature) {
+    return { ok: false, keyId: null, reason: 'unparseable-signature-header' };
+  }
+
+  if (signature.algorithm !== 'rsa-sha256' && signature.algorithm !== 'hs2019') {
+    return { ok: false, keyId: signature.keyId, reason: 'unsupported-algorithm' };
+  }
+
+  if (signature.headers.includes('digest')) {
+    const digestHeader = request.headers.get('digest');
+
+    if (!digestHeader) {
+      return { ok: false, keyId: signature.keyId, reason: 'missing-digest-for-body' };
+    }
+
+    if (rawBody !== undefined && !verifyDigest(rawBody, digestHeader)) {
+      return { ok: false, keyId: signature.keyId, reason: 'digest-mismatch' };
+    }
+  }
+
+  if (signature.headers.includes('date')) {
+    const dateHeader = request.headers.get('date');
+
+    if (dateHeader) {
+      const parsed = Date.parse(dateHeader);
+
+      if (!Number.isNaN(parsed)) {
+        const skew = Math.abs(Date.now() - parsed) / 1000;
+
+        if (skew > clockSkewSeconds) {
+          return { ok: false, keyId: signature.keyId, reason: 'date-out-of-window' };
+        }
+      }
+    }
+  }
+
+  const resolver = publicKeyResolver ?? getPublicKey;
+  const keyInfo = await resolver(signature.keyId);
+
+  if (!keyInfo) {
+    return { ok: false, keyId: signature.keyId, reason: 'public-key-unavailable' };
+  }
+
+  const signatureString = buildSignatureString(request, signature.headers);
+  const verifier = crypto.createVerify('SHA256');
+  verifier.update(signatureString, 'utf8');
+
+  let isValid = false;
+
+  try {
+    isValid = verifier.verify(
+      keyInfo.publicKeyPem,
+      Buffer.from(signature.signature, 'base64')
+    );
+  } catch {
+    isValid = false;
+  }
+
+  return {
+    ok: isValid,
+    keyId: signature.keyId,
+    reason: isValid ? null : 'signature-mismatch',
+  };
+}
+
 
 
 

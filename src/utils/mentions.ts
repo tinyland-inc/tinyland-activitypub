@@ -247,15 +247,13 @@ export function buildMentionAddressing(
   
   switch (visibility) {
     case 'public':
-      to.push('https://www.w3.org/ns/activitystreams#Public');
-      if (actorFollowersUri) {
-        cc.push(actorFollowersUri);
-      }
+      // TIN-1456: as#Public is gated — downgrade to the followers collection.
+      to.push(actorFollowersUri || '');
       break;
 
     case 'unlisted':
+      // TIN-1456: as#Public is gated — followers collection only.
       to.push(actorFollowersUri || '');
-      cc.push('https://www.w3.org/ns/activitystreams#Public');
       break;
 
     case 'followers':

@@ -105,8 +105,10 @@ describe('Mentions and Hashtags', () => {
         'https://example.com/@alice/followers',
         mentions
       );
-      expect(addressing.to).toContain('https://www.w3.org/ns/activitystreams#Public');
-      expect(addressing.cc).toContain('https://example.com/@alice/followers');
+      // TIN-1456: as#Public is gated — public downgrades to followers-only.
+      expect(addressing.to).not.toContain('https://www.w3.org/ns/activitystreams#Public');
+      expect(addressing.to).toContain('https://example.com/@alice/followers');
+      expect(addressing.cc).not.toContain('https://www.w3.org/ns/activitystreams#Public');
     });
 
     it('should build followers-only addressing', () => {

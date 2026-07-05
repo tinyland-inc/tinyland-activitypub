@@ -3,7 +3,7 @@
 
 
 
-import { getActorUri } from '../config.js';
+import { getActorUri, gatedAudience } from '../config.js';
 import { parseContent } from '../utils/mentions.js';
 import type {
   BlogPost,
@@ -95,8 +95,8 @@ export function convertBlogPostToArticle(
     published: post.publishedAt,
     updated: post.updatedAt,
     attributedTo: actorUriVal,
-    to: post.visibility === 'public' ? ['https://www.w3.org/ns/activitystreams#Public'] : [],
-    cc: [`${actorUriVal}/followers`],
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUriVal}/followers`, post.visibility),
     tag: [...hashtags, ...createHashtagTags(post.tags)],
     attachment: post.featuredImage ? [createImageAttachment(post.featuredImage)] : [],
     likes: `${objectUri}/likes`,
@@ -137,8 +137,8 @@ export function convertNoteToNoteObject(
     published: note.publishedAt,
     updated: note.updatedAt,
     attributedTo: actorUriVal,
-    to: note.visibility === 'public' ? ['https://www.w3.org/ns/activitystreams#Public'] : [],
-    cc: [`${actorUriVal}/followers`],
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUriVal}/followers`, note.visibility),
     tag: [...hashtags, ...createHashtagTags(note.tags)],
     inReplyTo: note.inReplyTo,
     likes: `${objectUri}/likes`,
@@ -176,8 +176,8 @@ export function convertProductToObject(
     published: product.publishedAt,
     updated: product.updatedAt,
     attributedTo: actorUriVal,
-    to: product.visibility === 'public' ? ['https://www.w3.org/ns/activitystreams#Public'] : [],
-    cc: [`${actorUriVal}/followers`],
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUriVal}/followers`, product.visibility),
     tag: createHashtagTags(product.tags),
     attachment: [
       ...(product.featuredImage ? [createImageAttachment(product.featuredImage)] : []),
@@ -213,7 +213,8 @@ export function convertProfileToObject(
     published: profile.publishedAt,
     updated: profile.updatedAt,
     attributedTo: actorUriVal,
-    to: ['https://www.w3.org/ns/activitystreams#Public']
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUriVal}/followers`, 'public')
   };
 }
 
@@ -246,8 +247,8 @@ export function convertImageToImageObject(
     published: image.publishedAt,
     updated: image.updatedAt,
     attributedTo: actorUriVal,
-    to: image.visibility === 'public' ? ['https://www.w3.org/ns/activitystreams#Public'] : [],
-    cc: [`${actorUriVal}/followers`],
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUriVal}/followers`, image.visibility),
     tag: createHashtagTags(image.tags)
   };
 }
@@ -285,8 +286,8 @@ export function convertVideoToVideoObject(
     published: video.publishedAt,
     updated: video.updatedAt,
     attributedTo: actorUriVal,
-    to: video.visibility === 'public' ? ['https://www.w3.org/ns/activitystreams#Public'] : [],
-    cc: [`${actorUriVal}/followers`],
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUriVal}/followers`, video.visibility),
     tag: createHashtagTags(video.tags),
     duration: `PT${video.duration || 0}S`,
     icon: video.thumbnailUrl ? { type: 'Image', url: video.thumbnailUrl } : undefined,
@@ -324,8 +325,8 @@ export function convertDocumentToDocumentObject(
     published: doc.publishedAt,
     updated: doc.updatedAt,
     attributedTo: actorUriVal,
-    to: doc.visibility === 'public' ? ['https://www.w3.org/ns/activitystreams#Public'] : [],
-    cc: [`${actorUriVal}/followers`],
+    // TIN-1456: as#Public is gated — controlled audience only (see gatedAudience).
+    ...gatedAudience(`${actorUriVal}/followers`, doc.visibility),
     tag: createHashtagTags(doc.tags),
     attachment: [
       {
