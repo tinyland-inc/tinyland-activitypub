@@ -1,6 +1,6 @@
 {
   "name": "@tummycrypt/tinyland-activitypub",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "ActivityPub federation system for Tinyland",
   "type": "module",
   "license": "Zlib AND LicenseRef-Tinyland-Proprietary",
