@@ -26,7 +26,17 @@ function getApEncryptionKey(): Buffer | null {
 
 export function encryptPrivateKey(pem: string): string {
   const key = getApEncryptionKey();
-  if (!key) return pem; // No key configured — store plaintext (dev mode)
+  if (!key) {
+    // TIN-2648: fail closed. Refuse to persist a private key we cannot encrypt
+    // rather than silently storing it in plaintext. A missing (or too-short)
+    // key-encryption secret is an operator misconfiguration, not a dev-mode
+    // convenience — surface it here instead of leaking key material at rest.
+    throw new Error(
+      'Cannot encrypt ActivityPub private key: no key-encryption secret is configured. ' +
+        'Set ACTIVITYPUB_KEY_ENCRYPTION_KEY (or TOTP_ENCRYPTION_KEY / AUTH_SECRET) ' +
+        'to at least 16 characters. Refusing to store the private key in plaintext.'
+    );
+  }
 
   const iv = crypto.randomBytes(AP_KEY_IV_LEN);
   const cipher = crypto.createCipheriv(AP_KEY_ALGO, key, iv);

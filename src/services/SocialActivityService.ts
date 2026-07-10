@@ -148,7 +148,10 @@ export async function handleFollowActivity(
   });
 
   
-  if (config.autoApproveFollows) {
+  // TIN-2645: fail closed. Only an explicit `true` auto-approves an inbound
+  // Follow; any other value (unset, undefined, truthy-but-not-true) leaves the
+  // request pending for manual approval.
+  if (config.autoApproveFollows === true) {
     await acceptFollow(localActorHandle, activity);
   } else {
     console.log(`[SocialActivityService] Follow request from ${follower.handle} pending approval`);
